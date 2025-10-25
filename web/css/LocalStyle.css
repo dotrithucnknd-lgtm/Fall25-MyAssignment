@@ -1,0 +1,213 @@
+/* --- CSS Variables for Halloween Theme --- */
+:root {
+    --primary-color: #ff7f00; /* Halloween Orange */
+    --primary-dark: #cc6600;  /* Darker Orange */
+    --secondary-color: #4b0082; /* Indigo/Purple */
+    --accent-color: #9acd32; /* YellowGreen (like a spooky glow) */
+    --background-color: #fdf6e3; /* Solarized light - Off-white/Cream */
+    --text-color: #2a2a2a; /* Very Dark Grey/Off-black */
+    --border-color: #d3c7ae; /* Muted brown/grey border */
+    --white-color: #ffffff;
+    --error-bg: #ffebee; /* Light red */
+    --error-border: #ffcdd2;
+    --error-text: #c62828;
+    --success-bg: #e8f5e9; /* Light green */
+    --success-border: #c8e6c9;
+    --success-text: #2e7d32;
+    --font-family: 'Poppins', sans-serif; /* Keep Poppins, it's clean */
+    --box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15); /* Slightly stronger shadow */
+    --border-radius: 6px; /* Slightly less rounded corners */
+}
+
+/* --- Google Font Import --- */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
+
+/* --- General Body Styling --- */
+body {
+    font-family: var(--font-family);
+    margin: 0;
+    padding: 30px;
+    line-height: 1.7;
+    background-color: var(--background-color);
+    color: var(--text-color);
+    font-weight: 400; /* Standard weight */
+}
+
+/* --- Container for Centering Content --- */
+.container {
+    max-width: 500px;
+    margin: 50px auto;
+    padding: 35px;
+    background-color: var(--white-color);
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    border: 1px solid var(--border-color);
+}
+
+/* --- Heading Styling --- */
+h1, h2, h3 {
+    color: var(--secondary-color); /* Purple headings */
+    margin-bottom: 18px;
+    font-weight: 700; /* Bolder headings for emphasis */
+    letter-spacing: 0.5px; /* Slight spacing */
+}
+
+h1 {
+    border-bottom: 3px dashed var(--primary-color); /* Dashed orange border */
+    padding-bottom: 12px;
+    font-size: 2em;
+    text-align: center;
+    text-transform: uppercase; /* Uppercase H1 */
+}
+
+/* --- Link Styling --- */
+a {
+    color: var(--primary-dark); /* Dark Orange links */
+    text-decoration: none;
+    font-weight: 600; /* Slightly bolder links */
+    transition: color 0.2s ease-in-out;
+}
+
+a:hover {
+    color: var(--accent-color); /* Spooky green glow on hover */
+    text-decoration: none;
+}
+
+/* --- Form Styling --- */
+form {
+    margin-bottom: 30px;
+}
+
+.form-group {
+    margin-bottom: 22px;
+}
+
+form label {
+    display: block;
+    margin-bottom: 6px;
+    color: var(--secondary-color); /* Purple labels */
+    font-weight: 600;
+    font-size: 0.9em;
+    text-transform: uppercase;
+}
+
+form input[type="text"],
+form input[type="password"] {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid var(--border-color); /* Slightly thicker border */
+    border-radius: var(--border-radius);
+    font-size: 1em;
+    font-family: var(--font-family);
+    box-sizing: border-box;
+    transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+form input[type="text"]:focus,
+form input[type="password"]:focus {
+    outline: none;
+    border-color: var(--primary-color); /* Orange border on focus */
+    box-shadow: 0 0 0 4px rgba(255, 127, 0, 0.2); /* Orange glow */
+}
+
+form input[type="submit"] {
+    background: linear-gradient(to bottom, var(--primary-color), var(--primary-dark)); /* Orange gradient */
+    color: var(--white-color);
+    padding: 12px 25px;
+    border: none;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    font-size: 1.1em;
+    font-weight: 700; /* Bolder button */
+    font-family: var(--font-family);
+    text-transform: uppercase; /* Uppercase button text */
+    width: 100%;
+    transition: transform 0.1s ease-in-out, box-shadow 0.2s ease-in-out, background 0.2s ease;
+    margin-top: 15px;
+    letter-spacing: 1px;
+}
+
+form input[type="submit"]:hover {
+    background: linear-gradient(to bottom, var(--primary-dark), var(--primary-color)); /* Reverse gradient */
+    transform: translateY(-3px);
+    box-shadow: 0 8px 18px rgba(204, 102, 0, 0.4); /* Stronger orange shadow */
+}
+
+form input[type="submit"]:active {
+    transform: translateY(0);
+    box-shadow: 0 5px 15px rgba(204, 102, 0, 0.3);
+}
+
+/* --- Message Styling (Error & Success) --- */
+.message {
+    padding: 15px 20px;
+    border-radius: var(--border-radius);
+    margin-bottom: 25px;
+    font-weight: 600; /* Bolder message text */
+    text-align: center;
+    border-left: 5px solid; /* Add a colored left border */
+}
+
+.error {
+    color: var(--error-text);
+    background-color: var(--error-bg);
+    border-color: var(--error-text); /* Use text color for border */
+}
+
+.success {
+    color: var(--success-text);
+    background-color: var(--success-bg);
+    border-color: var(--success-text); /* Use text color for border */
+}
+
+/* --- Navigation Styling --- */
+nav ul {
+    list-style: none;
+    padding: 0;
+    margin: 35px 0;
+}
+
+nav li {
+    margin-bottom: 15px;
+    padding: 12px 18px;
+    background-color: var(--white-color);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+    border-left: 5px solid var(--secondary-color); /* Purple left border */
+    transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
+}
+nav li:hover {
+     transform: scale(1.02); /* Slight scale up */
+     box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+}
+
+nav a {
+    font-weight: 600; /* Bolder nav links */
+    display: block; /* Make the whole area clickable */
+}
+
+/* --- Simple Horizontal Rule --- */
+hr {
+    border: 0;
+    height: 2px; /* Thicker rule */
+    background: linear-gradient(to right, transparent, var(--primary-color), transparent); /* Fading orange line */
+    margin: 35px 0;
+}
+
+/* --- Basic Responsiveness --- */
+@media (max-width: 600px) {
+    body {
+        padding: 20px;
+    }
+    .container {
+        margin: 25px auto;
+        padding: 25px;
+    }
+    h1 {
+        font-size: 1.6em;
+    }
+    form input[type="submit"] {
+        padding: 12px 20px;
+        font-size: 1em;
+    }
+}

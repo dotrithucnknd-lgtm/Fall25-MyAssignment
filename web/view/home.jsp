@@ -5,6 +5,7 @@
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <title>Trang chủ - Quản lý nghỉ phép</title>
+    <link rel="stylesheet" type="text/css" href="${pageContext.request.contextPath}/css/LocalStyle.css">
     <style>
         body { font-family: sans-serif; }
         nav ul { list-style: none; padding: 0; }
