@@ -1,30 +1,40 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
-package controller.home;
+package controller.home; // Make sure package name matches your structure
 
-import controller.iam.BaseRequiredAuthenticationController;
+import controller.iam.BaseRequiredAuthenticationController; // Ensure this import is correct
 import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import model.iam.User;
+import model.iam.User; // Ensure this import is correct
 
 /**
- *
- * @author admin
+ * Handles requests for the home page after successful login.
  */
+@WebServlet(urlPatterns = "/home") // Maps requests to /home
 public class HomeController extends BaseRequiredAuthenticationController {
 
+    /**
+     * Handles POST requests (e.g., from forms on the home page).
+     * For now, just forwards to doGet.
+     */
     @Override
-    protected void doPost(HttpServletRequest req, HttpServletResponse resp, User user) throws ServletException, IOException {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp, User user)
+            throws ServletException, IOException {
+        // You might add logic here later if the home page has forms submitting via POST.
+        // For now, just show the same home page.
+        doGet(req, resp, user);
     }
 
+    /**
+     * Handles GET requests to display the home page.
+     */
     @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp, User user) throws ServletException, IOException {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp, User user)
+            throws ServletException, IOException {
+        // The user object is already available because BaseRequiredAuthenticationController provides it.
+        // We just need to show the home view.
+        // Make sure the path to home.jsp is correct (starts with / and is outside WEB-INF)
+        req.getRequestDispatcher("/view/home.jsp").forward(req, resp);
     }
-    
 }
