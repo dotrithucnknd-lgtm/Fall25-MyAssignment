@@ -1,34 +1,63 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package controller.request;
 
-import controller.iam.BaseRequiredAuthorizationController;
+import controller.iam.BaseRequiredAuthenticationController; 
+import dal.RequestForLeaveDBContext;
+import model.Employee;
+import model.LeaveType;
+import model.iam.User;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import model.iam.User;
+import java.sql.Date;
+import model.RequestForLeave;
 
-/**
- *
- * @author admin
- */
-@WebServlet(urlPatterns="/request/create")
-public class CreateController extends BaseRequiredAuthorizationController{
+@WebServlet(urlPatterns = "/request/create")
+public class CreateController extends BaseRequiredAuthenticationController {
 
     @Override
-    protected void processPost(HttpServletRequest req, HttpServletResponse resp, User user) throws ServletException, IOException {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp, User user)
+            throws ServletException, IOException {
+        
+        // CHỈ HIỂN THỊ FORM - KHÔNG CẦN LẤY DỮ LIỆU LOẠI PHÉP
+        req.getRequestDispatcher("/view/request/create.jsp").forward(req, resp);
     }
 
     @Override
-    protected void processGet(HttpServletRequest req, HttpServletResponse resp, User user) throws ServletException, IOException {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp, User user)
+            throws ServletException, IOException {
+        
+        // 1. Lấy dữ liệu từ form (CHÚ Ý: Đã thêm input cho LoaiPhép là 'leaveTypeID')
+        String ltId = req.getParameter("leaveTypeID"); // Đây là ID loại phép (sẽ gán cứng)
+        String from = req.getParameter("from");
+        String to = req.getParameter("to");
+        String reason = req.getParameter("reason");
+        
+        // 2. Tạo đối tượng RequestForLeave
+        RequestForLeave rfl = new RequestForLeave();
+        
+        // Map LeaveType: GÁN CỨNG (Hoặc lấy từ input nếu bạn muốn người dùng tự nhập ID)
+        LeaveType lt = new LeaveType();
+        lt.setId(ltId != null ? ltId : "1"); // Tạm thời gán ID là "1" nếu không có input
+        rfl.setLeaveType(lt); 
+        
+        // Map Ngày tháng
+        rfl.setFrom(Date.valueOf(from));
+        rfl.setTo(Date.valueOf(to));
+        rfl.setReason(reason);
+        
+        // Map người tạo đơn (Lấy từ User đã đăng nhập)
+        Employee creator = user.getEmployee();
+        rfl.setCreated_by(creator);
+        
+        // 3. (LOGIC TÌM SẾP BỊ BỎ QUA - Giả định đã có approver_id = 1 trong DBContext)
+        
+        // 4. Chèn vào database
+        RequestForLeaveDBContext rflDB = new RequestForLeaveDBContext();
+        rflDB.insert(rfl);
+        
+        // 5. Chuyển hướng về trang danh sách đơn
+        resp.sendRedirect(req.getContextPath() + "/request/list");
     }
-
-   
-    
 }
