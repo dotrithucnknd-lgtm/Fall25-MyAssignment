@@ -4,62 +4,53 @@
 <html>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-    <title>Trang chủ - Quản lý nghỉ phép</title>
+    <title>Home - Leave Management</title>
     <link rel="stylesheet" type="text/css" href="${pageContext.request.contextPath}/css/LocalStyle.css">
-    <style>
-        body { font-family: sans-serif; }
-        nav ul { list-style: none; padding: 0; }
-        nav li { margin-bottom: 10px; }
-        nav a { text-decoration: none; color: blue; }
-        nav a:hover { text-decoration: underline; }
-    </style>
 </head>
-<body>
+<%-- THÊM class="home-page" VÀO THẺ BODY --%>
+<body class="home-page"> 
+    
+    <div class="main-content"> 
+        
+        <c:if test="${not empty sessionScope.auth}">
+            
+            <div class="header-area">
+                <h1>MAIN SYSTEM HOME</h1>
+                <h2 class="welcome-message">Welcome, ${sessionScope.auth.displayname}!</h2>
+                <p class="account-info">You are logged in as: <strong>${sessionScope.auth.username}</strong></p>
+                <hr class="main-hr">
+            </div>
+            
 
-    <c:if test="${not empty sessionScope.auth}">
-        <h1>Chào mừng, ${sessionScope.auth.displayname}!</h1>
-        <p>Bạn đã đăng nhập với tài khoản: <strong>${sessionScope.auth.username}</strong></p>
-        <hr>
+            <h2>Core Functions:</h2>
+            
+            <nav class="button-menu">
+                
+                <a href="${pageContext.request.contextPath}/request/create" class="menu-button primary-btn">
+                    <span class="icon">📝</span> Create New Leave Request
+                </a>
 
-        <h2>Chức năng chính:</h2>
-        <nav>
-            <ul>
-                <%-- Link cho tất cả nhân viên --%>
-                <li>
-                    <a href="${pageContext.request.contextPath}/request/create">Tạo đơn xin nghỉ phép mới</a>
-                </li>
-                <li>
-                    <a href="${pageContext.request.contextPath}/request/list">Xem danh sách đơn nghỉ phép của bạn</a>
-                </li>
+                <a href="${pageContext.request.contextPath}/request/list" class="menu-button primary-btn">
+                    <span class="icon">📜</span> View My Leave Requests
+                </a>
+                
+                <hr class="nav-hr">
 
-                <%--
-                TODO: Thêm kiểm tra vai trò ở đây (ví dụ: chỉ hiển thị cho Manager)
-                Sử dụng <c:if test="${sessionScope.auth.hasRole('Manager')}"> ... </c:if>
-                (Bạn cần thêm phương thức hasRole vào model User hoặc kiểm tra theo cách khác)
-                --%>
-                <%-- <li> --%>
-                <%--    <a href="${pageContext.request.contextPath}/request/review">Duyệt đơn nghỉ phép của cấp dưới</a> --%>
-                <%-- </li> --%>
-                <%-- <li> --%>
-                <%--    <a href="${pageContext.request.contextPath}/division/agenda">Xem lịch làm việc/nghỉ phép (Agenda)</a> --%>
-                <%-- </li> --%>
+                <a href="${pageContext.request.contextPath}/logout" class="menu-button logout-btn">
+                    <span class="icon">❌</span> Log Out
+                </a>
+            </nav>
 
-                <%-- Link Đăng xuất --%>
-                <li>
-                    <a href="${pageContext.request.contextPath}/logout">Đăng xuất</a>
-                </li>
-            </ul>
-        </nav>
+        </c:if>
 
-    </c:if>
-
-    <c:if test="${empty sessionScope.auth}">
-        <h1>Truy cập bị từ chối!</h1>
-        <p style="color:red;">Bạn phải đăng nhập để xem trang này.</p>
-        <p>
-            <a href="${pageContext.request.contextPath}/login">Đi đến Trang đăng nhập</a>
-        </p>
-    </c:if>
-
+        <c:if test="${empty sessionScope.auth}">
+            <h1>Access Denied!</h1>
+            <p class="message error">You must be logged in to view this page.</p>
+            <p>
+                <a href="${pageContext.request.contextPath}/login">Go to Login Page</a>
+            </p>
+        </c:if>
+        
+    </div>
 </body>
 </html>
