@@ -1,16 +1,15 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
-<!DOCTYPE html>
-<html>
-<head>
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-    <title>Tạo Đơn Xin Nghỉ Phép</title>
-    <link rel="stylesheet" type="text/css" href="${pageContext.request.contextPath}/css/LocalStyle.css">
-</head>
-<body>
-    <div class="main-content">
-        <h1>Tạo Đơn Xin Nghỉ Phép Mới</h1>
-        <hr>
+<jsp:include page="/view/layout/header.jsp" />
+    <div class="main-content container">
+        <div class="hero" style="margin-bottom:16px;">
+            <div>
+                <h1 style="margin-top:0;">Tạo Đơn Xin Nghỉ Phép</h1>
+                <p>Điền thông tin thời gian và lý do nghỉ. Đơn của bạn sẽ được gửi tới quản lý.</p>
+            </div>
+            <img src="${pageContext.request.contextPath}/assets/img/home-decor-3.jpg" alt="Create" />
+        </div>
+        <div class="card">
 
         <form action="${pageContext.request.contextPath}/request/create" method="POST" class="login-form">
             
@@ -40,6 +39,6 @@
             
             <input type="submit" value="GỬI ĐƠN XIN NGHỈ">
         </form>
+        </div>
     </div>
-</body>
-</html>
+<jsp:include page="/view/layout/footer.jsp" />

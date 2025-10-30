@@ -39,9 +39,6 @@ public class CreateController extends BaseRequiredAuthenticationController {
         
         // Map LeaveType: GÁN CỨNG (Hoặc lấy từ input nếu bạn muốn người dùng tự nhập ID)
         LeaveType lt = new LeaveType();
-        lt.setId(ltId != null ? ltId : "1"); // Tạm thời gán ID là "1" nếu không có input
-        rfl.setLeaveType(lt); 
-        
         // Map Ngày tháng
         rfl.setFrom(Date.valueOf(from));
         rfl.setTo(Date.valueOf(to));

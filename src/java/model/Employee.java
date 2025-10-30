@@ -36,13 +36,5 @@ public class Employee extends BaseModel{
     public void setSupervisor(Employee supervisor) {
         this.supervisor = supervisor;
     }
-
-    public void setID(String eid) {
-        this.id = id;
-    }
-
-    public void setId(String supervisorId) {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
-    }
     
 }

@@ -48,6 +48,7 @@ public class RequestForLeaveDBContext extends DBContext<RequestForLeave> {
             while(rs.next())
             {
                 RequestForLeave rfl = new RequestForLeave();
+                rfl.setId(rs.getInt("rid"));
                 
                 rfl.setCreated_time(rs.getTimestamp("created_time"));
                 rfl.setFrom(rs.getDate("from"));
@@ -88,17 +89,87 @@ public class RequestForLeaveDBContext extends DBContext<RequestForLeave> {
 
     @Override
     public RequestForLeave get(int id) {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        try {
+            String sql = """
+                                SELECT rid, created_by, created_time, [from], [to], reason, status, processed_by
+                                FROM RequestForLeave
+                                WHERE rid = ?
+                           """;
+            PreparedStatement stm = connection.prepareStatement(sql);
+            stm.setInt(1, id);
+            ResultSet rs = stm.executeQuery();
+            if (rs.next()) {
+                RequestForLeave r = new RequestForLeave();
+                r.setId(rs.getInt("rid"));
+                r.setCreated_time(rs.getTimestamp("created_time"));
+                r.setFrom(rs.getDate("from"));
+                r.setTo(rs.getDate("to"));
+                r.setReason(rs.getString("reason"));
+                r.setStatus(rs.getInt("status"));
+                Employee creator = new Employee();
+                creator.setId(rs.getInt("created_by"));
+                r.setCreated_by(creator);
+                int pb = rs.getInt("processed_by");
+                if (pb != 0) {
+                    Employee approver = new Employee();
+                    approver.setId(pb);
+                    r.setProcessed_by(approver);
+                }
+                return r;
+            }
+        } catch (SQLException ex) {
+            Logger.getLogger(RequestForLeaveDBContext.class.getName()).log(Level.SEVERE, null, ex);
+        } finally {
+            closeConnection();
+        }
+        return null;
     }
 
     @Override
     public void insert(RequestForLeave model) {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        try {
+            String sql = """
+                                INSERT INTO [RequestForLeave]
+                                    ([created_by],[created_time],[from],[to],[reason],[status],[processed_by])
+                                VALUES
+                                    (?,?,?,?,?,0,NULL)
+                           """;
+            PreparedStatement stm = connection.prepareStatement(sql);
+            stm.setInt(1, model.getCreated_by().getId());
+            stm.setTimestamp(2, new Timestamp(System.currentTimeMillis()));
+            stm.setDate(3, model.getFrom());
+            stm.setDate(4, model.getTo());
+            stm.setString(5, model.getReason());
+            stm.executeUpdate();
+        } catch (SQLException ex) {
+            Logger.getLogger(RequestForLeaveDBContext.class.getName()).log(Level.SEVERE, null, ex);
+        } finally {
+            closeConnection();
+        }
     }
 
     @Override
     public void update(RequestForLeave model) {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        try {
+            String sql = """
+                                UPDATE [RequestForLeave]
+                                SET [status] = ?, [processed_by] = ?
+                                WHERE [rid] = ?
+                           """;
+            PreparedStatement stm = connection.prepareStatement(sql);
+            stm.setInt(1, model.getStatus());
+            if (model.getProcessed_by() != null) {
+                stm.setInt(2, model.getProcessed_by().getId());
+            } else {
+                stm.setNull(2, java.sql.Types.INTEGER);
+            }
+            stm.setInt(3, model.getId());
+            stm.executeUpdate();
+        } catch (SQLException ex) {
+            Logger.getLogger(RequestForLeaveDBContext.class.getName()).log(Level.SEVERE, null, ex);
+        } finally {
+            closeConnection();
+        }
     }
 
     @Override

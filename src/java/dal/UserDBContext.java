@@ -39,7 +39,7 @@ public class UserDBContext extends DBContext<User> {
             while(rs.next()){
                 User u = new User();
                 Employee e = new Employee();
-                e.setID(rs.getString("eid"));
+                e.setId(rs.getInt("eid"));
                 e.setName(rs.getString("ename"));
                 u.setEmployee(e);
                 

@@ -1,45 +1,49 @@
 <%@ page contentType="text/html" pageEncoding="UTF-8"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
-<!DOCTYPE html>
-<html>
-<head>
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-    <title>Home - Leave Management</title>
-    <link rel="stylesheet" type="text/css" href="${pageContext.request.contextPath}/css/LocalStyle.css">
-</head>
-<%-- THÊM class="home-page" VÀO THẺ BODY --%>
-<body class="home-page"> 
-    
-    <div class="main-content"> 
+<jsp:include page="/view/layout/header.jsp" />
+    <div class="main-content container"> 
+            <div class="hero" style="margin-bottom:16px;">
+                <div>
+                    <h1>Quản lý nghỉ phép dễ dàng</h1>
+                    <p>Theo dõi, tạo và phê duyệt đơn xin nghỉ chỉ trong vài bước.</p>
+                    <div style="margin-top:12px;" class="actions">
+                        <a class="btn" href="${pageContext.request.contextPath}/request/create">Tạo đơn mới</a>
+                        <a class="btn-ghost" href="${pageContext.request.contextPath}/request/list">Xem đơn</a>
+                    </div>
+                </div>
+                <img src="${pageContext.request.contextPath}/assets/img/home-decor-1.jpg" alt="Hero" />
+            </div>
         
         <c:if test="${not empty sessionScope.auth}">
             
-            <div class="header-area">
-                <h1>MAIN SYSTEM HOME</h1>
-                <h2 class="welcome-message">Welcome, ${sessionScope.auth.displayname}!</h2>
-                <p class="account-info">You are logged in as: <strong>${sessionScope.auth.username}</strong></p>
-                <hr class="main-hr">
+            <div class="card">
+                <h1 style="margin:0 0 8px 0;">Welcome, ${sessionScope.auth.displayname}!</h1>
+                <p class="account-info">Signed in as <strong>${sessionScope.auth.username}</strong></p>
             </div>
             
 
             <h2>Core Functions:</h2>
             
-            <nav class="button-menu">
-                
-                <a href="${pageContext.request.contextPath}/request/create" class="menu-button primary-btn">
-                    <span class="icon">📝</span> Create New Leave Request
-                </a>
+            <div class="grid grid-2">
+                <div class="card">
+                    <h3 style="margin-top:0;">Create leave request</h3>
+                    <p class="muted">Submit a new time-off request.</p>
+                    <div class="actions">
+                        <a class="btn" href="${pageContext.request.contextPath}/request/create">Open</a>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3 style="margin-top:0;">View requests</h3>
+                    <p class="muted">See your requests and approvals.</p>
+                    <div class="actions">
+                        <a class="btn" href="${pageContext.request.contextPath}/request/list">Open</a>
+                    </div>
+                </div>
+            </div>
 
-                <a href="${pageContext.request.contextPath}/request/list" class="menu-button primary-btn">
-                    <span class="icon">📜</span> View My Leave Requests
-                </a>
-                
-                <hr class="nav-hr">
-
-                <a href="${pageContext.request.contextPath}/logout" class="menu-button logout-btn">
-                    <span class="icon">❌</span> Log Out
-                </a>
-            </nav>
+            <div style="margin-top:16px;">
+                <a class="btn btn-ghost" href="${pageContext.request.contextPath}/logout">Log out</a>
+            </div>
 
         </c:if>
 
@@ -52,5 +56,4 @@
         </c:if>
         
     </div>
-</body>
-</html>
+<jsp:include page="/view/layout/footer.jsp" />

@@ -1,27 +1,20 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
-<!DOCTYPE html>
-<html>
-    <head>
-        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-        <title>Đăng nhập hệ thống - Fall25Assm</title>
-
-        <%-- Link CSS (Đảm bảo file LocalStyle.css đã được cập nhật) --%>
-        <link rel="stylesheet" type="text/css" 
-              href="${pageContext.request.contextPath}/css/LocalStyle.css">
-    </head>
-    <body>
-        <div class="login-wrapper">
-            <%-- Container chính để căn giữa form --%>
-            <div class="container">
-                <h1>LOGIN</h1>
+<jsp:include page="/view/layout/header.jsp" />
+        <div class="container">
+            <div class="grid grid-2" style="align-items:center;">
+                <div>
+                    <img src="${pageContext.request.contextPath}/assets/img/illustrations/rocket-white.png" onerror="this.src='${pageContext.request.contextPath}/assets/img/home-decor-2.jpg'" alt="Welcome" style="width:100%;border-radius:12px;border:1px solid var(--border);"/>
+                </div>
+                <div class="card" style="max-width:480px;">
+                    <h1 style="margin-top:0;">Đăng nhập</h1>
 
                 <%-- Hiển thị thông báo lỗi (nếu có) --%>
                 <c:if test="${not empty message}">
                     <p class="message error">${message}</p>
                 </c:if>
 
-                <form action="${pageContext.request.contextPath}/login" method="POST" class="login-form">
+                <form action="${pageContext.request.contextPath}/login" method="POST">
 
                     <%-- Ô Username --%>
                     <div class="form-group">
@@ -44,13 +37,13 @@
                     </div>
 
                     <%-- Nút Submit --%>
-                    <input type="submit" id="btnLogin" value="LOG IN"/>
+                    <button type="submit" class="btn">Log in</button>
                 </form>
 
-                <p style="margin-top: 20px; font-size: 0.85em; color: #999;">
-                    <a href="#" style="color: var(--primary-color); text-decoration: none;">Forgot Password?</a>
+                <p style="margin-top: 20px; font-size: 0.85em; color: var(--muted);">
+                    <a href="#" style="color: var(--primary); text-decoration: none;">Quên mật khẩu?</a>
                 </p>
+                </div>
             </div>
         </div>
-    </body>
-</html>
+<jsp:include page="/view/layout/footer.jsp" />

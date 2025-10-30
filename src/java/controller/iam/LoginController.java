@@ -1,10 +1,8 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package controller.iam;
 
-import dal.UserDBContext;
+import dal.UserDBContext; 
+import model.iam.User;     
+
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -12,40 +10,51 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
-import model.iam.User;
 
-/**
- *
- * @author admin
- */
-@WebServlet(urlPatterns = "/login")
+@WebServlet(urlPatterns = "/login") 
 public class LoginController extends HttpServlet {
-      @Override
+
+    @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        String username = req.getParameter("username");
-        String password = req.getParameter("password");
         
-        //validate parameters 
+        // Lấy tham số (đảm bảo khớp với name="username" và name="password" trong login.jsp)
+        String username = req.getParameter("username"); 
+        String password = req.getParameter("password"); 
         
+        // Khởi tạo DBContext
         UserDBContext db = new UserDBContext();
-        User u = db.get(username, password);
+        User user = db.get(username, password); 
         
-        if(u!=null)
-        {
+        if (user != null) {
+            // =========================================================
+            // CHUYỂN HƯỚNG THÀNH CÔNG (SUCCESS)
+            // =========================================================
             HttpSession session = req.getSession();
-            session.setAttribute("auth", u);
-            req.setAttribute("message", "logged in successful!");
+            session.setAttribute("auth", user); 
+            
+            // Redirect sang /home
+            // Đây là hành động CHUYỂN HƯỚNG BẮT BUỘC để người dùng thấy thanh địa chỉ đổi sang /home
+            resp.sendRedirect(req.getContextPath() + "/home"); 
+
+        } else {
+            // =========================================================
+            // CHUYỂN HƯỚNG THẤT BẠI (FAILED)
+            // =========================================================
+            
+            // 1. Đặt thông báo lỗi vào Request Scope
+            req.setAttribute("message", "Invalid username or password! Please try again.");
+            
+            // 2. Forward trở lại trang login.jsp
+            // Forward giữ lại Request Scope, nên trang login.jsp có thể đọc được ${message}
+            req.getRequestDispatcher("/view/auth/login.jsp").forward(req, resp);
         }
-        else
-        {
-            req.setAttribute("message", "invalid username or password!");
-        }
-        req.getRequestDispatcher("view/auth/message.jsp").forward(req, resp);
     }
-    
+
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        req.getRequestDispatcher("view/auth/login.jsp").forward(req, resp);
+        // Hiển thị form login
+        // Đảm bảo không có thông báo lỗi cũ
+        req.removeAttribute("message");
+        req.getRequestDispatcher("/view/auth/login.jsp").forward(req, resp);
     }
-    
 }

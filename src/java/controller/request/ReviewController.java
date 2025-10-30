@@ -19,14 +19,58 @@ import model.iam.User;
 @WebServlet(urlPatterns="/request/review")
 public class ReviewController extends BaseRequiredAuthorizationController {
 
+    private void handle(HttpServletRequest req, HttpServletResponse resp, User user) throws IOException {
+        String ridRaw = req.getParameter("rid");
+        String statusRaw = req.getParameter("status");
+        if(ridRaw == null || statusRaw == null) {
+            resp.sendRedirect(req.getContextPath() + "/request/list");
+            return;
+        }
+        try {
+            int rid = Integer.parseInt(ridRaw);
+            int status = Integer.parseInt(statusRaw); // 1=approved, 2=rejected
+            if(status != 1 && status != 2) {
+                resp.sendRedirect(req.getContextPath() + "/request/list");
+                return;
+            }
+            int approverEid = user.getEmployee().getId();
+            // Use a short-lived context for each operation because each closes its connection in finally
+            dal.RequestForLeaveDBContext getDb = new dal.RequestForLeaveDBContext();
+            model.RequestForLeave current = getDb.get(rid);
+            int oldStatus = current != null ? current.getStatus() : 0;
+
+            model.RequestForLeave r = new model.RequestForLeave();
+            r.setId(rid);
+            r.setStatus(status);
+            model.Employee approver = new model.Employee();
+            approver.setId(approverEid);
+            r.setProcessed_by(approver);
+            dal.RequestForLeaveDBContext updateDb = new dal.RequestForLeaveDBContext();
+            updateDb.update(r);
+
+            dal.RequestForLeaveHistoryDBContext hdb = new dal.RequestForLeaveHistoryDBContext();
+            model.RequestForLeaveHistory h = new model.RequestForLeaveHistory();
+            h.setRequestId(rid);
+            h.setOldStatus(oldStatus);
+            h.setNewStatus(status);
+            h.setProcessedBy(approver);
+            h.setProcessedTime(new java.sql.Timestamp(System.currentTimeMillis()));
+            h.setNote("Status changed by approver");
+            hdb.insert(h);
+        } catch (NumberFormatException ex) {
+            // ignore and fallback to redirect
+        }
+        resp.sendRedirect(req.getContextPath() + "/request/list");
+    }
+
     @Override
     protected void processPost(HttpServletRequest req, HttpServletResponse resp, User user) throws ServletException, IOException {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        handle(req, resp, user);
     }
 
     @Override
     protected void processGet(HttpServletRequest req, HttpServletResponse resp, User user) throws ServletException, IOException {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        handle(req, resp, user);
     }
     
 }
