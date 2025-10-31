@@ -48,6 +48,7 @@ public class ReviewController extends BaseRequiredAuthorizationController {
             dal.RequestForLeaveDBContext updateDb = new dal.RequestForLeaveDBContext();
             updateDb.update(r);
 
+            // Ghi log vào RequestForLeaveHistory (giữ để tương thích)
             dal.RequestForLeaveHistoryDBContext hdb = new dal.RequestForLeaveHistoryDBContext();
             model.RequestForLeaveHistory h = new model.RequestForLeaveHistory();
             h.setRequestId(rid);
@@ -57,6 +58,23 @@ public class ReviewController extends BaseRequiredAuthorizationController {
             h.setProcessedTime(new java.sql.Timestamp(System.currentTimeMillis()));
             h.setNote("Status changed by approver");
             hdb.insert(h);
+            
+            // Ghi log vào ActivityLog
+            String activityType = (status == 1) ? util.LogUtil.ActivityType.APPROVE_REQUEST : util.LogUtil.ActivityType.REJECT_REQUEST;
+            String actionDesc = (status == 1) ? "Duyệt đơn xin nghỉ #" + rid : "Từ chối đơn xin nghỉ #" + rid;
+            String oldValue = "{\"status\":" + oldStatus + "}";
+            String newValue = "{\"status\":" + status + "}";
+            
+            util.LogUtil.logActivity(
+                user,
+                activityType,
+                util.LogUtil.EntityType.REQUEST_FOR_LEAVE,
+                rid,
+                actionDesc,
+                oldValue,
+                newValue,
+                req
+            );
         } catch (NumberFormatException ex) {
             // ignore and fallback to redirect
         }

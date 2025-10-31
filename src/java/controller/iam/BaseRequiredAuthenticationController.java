@@ -30,7 +30,8 @@ public abstract class BaseRequiredAuthenticationController extends HttpServlet {
             User u = (User) req.getSession().getAttribute("auth");
             doPost(req, resp, u);
         } else {
-            resp.getWriter().println("access denied!");
+            // Redirect to login required page
+            resp.sendRedirect(req.getContextPath() + "/view/public/login_required.jsp");
         }
     }
 
@@ -41,7 +42,8 @@ public abstract class BaseRequiredAuthenticationController extends HttpServlet {
             User u = (User) req.getSession().getAttribute("auth");
             doGet(req, resp, u);
         } else {
-            resp.getWriter().println("access denied!");
+            // Redirect to login required page
+            resp.sendRedirect(req.getContextPath() + "/view/public/login_required.jsp");
         }
     }
 }

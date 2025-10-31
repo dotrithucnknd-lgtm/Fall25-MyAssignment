@@ -12,6 +12,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.sql.Date;
 import model.RequestForLeave;
+import util.LogUtil;
 
 @WebServlet(urlPatterns = "/request/create")
 public class CreateController extends BaseRequiredAuthenticationController {
@@ -50,11 +51,27 @@ public class CreateController extends BaseRequiredAuthenticationController {
         
         // 3. (LOGIC TÌM SẾP BỊ BỎ QUA - Giả định đã có approver_id = 1 trong DBContext)
         
-        // 4. Chèn vào database
+        // 4. Chèn vào database và lấy ID
         RequestForLeaveDBContext rflDB = new RequestForLeaveDBContext();
-        rflDB.insert(rfl);
+        int requestId = rflDB.insertAndReturnId(rfl);
         
-        // 5. Chuyển hướng về trang danh sách đơn
+        // 5. Ghi log vào ActivityLog
+        if (requestId > 0) {
+            String newValueJson = String.format("{\"rid\":%d,\"from\":\"%s\",\"to\":\"%s\",\"reason\":\"%s\",\"status\":0}", 
+                requestId, from, to, reason != null ? reason.replace("\"", "\\\"") : "");
+            LogUtil.logActivity(
+                user,
+                LogUtil.ActivityType.CREATE_REQUEST,
+                LogUtil.EntityType.REQUEST_FOR_LEAVE,
+                requestId,
+                "Tạo đơn xin nghỉ từ " + from + " đến " + to,
+                null,
+                newValueJson,
+                req
+            );
+        }
+        
+        // 6. Chuyển hướng về trang danh sách đơn
         resp.sendRedirect(req.getContextPath() + "/request/list");
     }
 }
