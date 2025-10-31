@@ -26,8 +26,28 @@ public class EmployeeDBContext extends DBContext<Employee> {
 
     @Override
     public ArrayList<Employee> list() { return new ArrayList<>(); }
+    
     @Override
-    public Employee get(int id) { return null; }
+    public Employee get(int id) {
+        try {
+            String sql = "SELECT eid, ename FROM Employee WHERE eid = ?";
+            PreparedStatement stm = connection.prepareStatement(sql);
+            stm.setInt(1, id);
+            ResultSet rs = stm.executeQuery();
+            if (rs.next()) {
+                Employee emp = new Employee();
+                emp.setId(rs.getInt("eid"));
+                emp.setName(rs.getString("ename"));
+                return emp;
+            }
+        } catch (SQLException ex) {
+            Logger.getLogger(EmployeeDBContext.class.getName()).log(Level.SEVERE, null, ex);
+        } finally {
+            closeConnection();
+        }
+        return null;
+    }
+    
     @Override
     public void insert(Employee model) {}
     @Override

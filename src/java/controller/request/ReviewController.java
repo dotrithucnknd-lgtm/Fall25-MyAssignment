@@ -37,7 +37,22 @@ public class ReviewController extends BaseRequiredAuthorizationController {
             // Use a short-lived context for each operation because each closes its connection in finally
             dal.RequestForLeaveDBContext getDb = new dal.RequestForLeaveDBContext();
             model.RequestForLeave current = getDb.get(rid);
-            int oldStatus = current != null ? current.getStatus() : 0;
+            
+            // Kiểm tra xem đơn có tồn tại không
+            if (current == null) {
+                resp.sendRedirect(req.getContextPath() + "/request/list");
+                return;
+            }
+            
+            // NGĂN CHẶN: Kiểm tra xem người đang duyệt có phải là người tạo đơn không
+            if (current.getCreated_by() != null && current.getCreated_by().getId() == approverEid) {
+                // Không cho phép tự duyệt đơn của chính mình
+                req.getSession().setAttribute("errorMessage", "Bạn không thể tự duyệt đơn của chính mình!");
+                resp.sendRedirect(req.getContextPath() + "/request/list");
+                return;
+            }
+            
+            int oldStatus = current.getStatus();
 
             model.RequestForLeave r = new model.RequestForLeave();
             r.setId(rid);

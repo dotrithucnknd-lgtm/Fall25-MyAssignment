@@ -206,6 +206,74 @@ public class UserDBContext extends DBContext<User> {
         }
         return false;
     }
+    
+    /**
+     * Kiểm tra xem user có tồn tại và có Enrollment active không
+     * @param username
+     * @return true nếu user tồn tại và có enrollment active, false nếu không
+     */
+    public boolean hasActiveEnrollment(String username) {
+        try {
+            String sql = """
+                SELECT 1 
+                FROM [User] u 
+                INNER JOIN [Enrollment] en ON u.[uid] = en.[uid]
+                WHERE u.username = ? AND en.active = 1
+            """;
+            PreparedStatement stm = connection.prepareStatement(sql);
+            stm.setString(1, username);
+            ResultSet rs = stm.executeQuery();
+            return rs.next();
+        } catch (SQLException ex) {
+            Logger.getLogger(UserDBContext.class.getName()).log(Level.SEVERE, null, ex);
+        } finally {
+            closeConnection();
+        }
+        return false;
+    }
+    
+    /**
+     * Lấy thông tin user chỉ với username (không kiểm tra password)
+     * Dùng để debug
+     */
+    public User getByUsernameOnly(String username) {
+        try {
+            String sql = """
+                SELECT u.uid, u.username, u.displayname, u.[password],
+                       en.eid, en.active,
+                       e.ename
+                FROM [User] u 
+                LEFT JOIN [Enrollment] en ON u.[uid] = en.[uid]
+                LEFT JOIN [Employee] e ON e.eid = en.eid
+                WHERE u.username = ?
+            """;
+            PreparedStatement stm = connection.prepareStatement(sql);
+            stm.setString(1, username);
+            ResultSet rs = stm.executeQuery();
+            if (rs.next()) {
+                User u = new User();
+                u.setId(rs.getInt("uid"));
+                u.setUsername(rs.getString("username"));
+                u.setDisplayname(rs.getString("displayname"));
+                u.setPassword(rs.getString("password"));
+                
+                int eid = rs.getInt("eid");
+                if (!rs.wasNull() && eid > 0) {
+                    Employee e = new Employee();
+                    e.setId(eid);
+                    e.setName(rs.getString("ename"));
+                    u.setEmployee(e);
+                }
+                
+                return u;
+            }
+        } catch (SQLException ex) {
+            Logger.getLogger(UserDBContext.class.getName()).log(Level.SEVERE, null, ex);
+        } finally {
+            closeConnection();
+        }
+        return null;
+    }
 
     @Override
     public void update(User model) {

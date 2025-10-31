@@ -285,5 +285,90 @@ public class RequestForLeaveDBContext extends DBContext<RequestForLeave> {
     public void delete(RequestForLeave model) {
         throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
+    
+    /**
+     * Đếm số lần nghỉ của một employee trong tháng hiện tại (chỉ đếm các request đã được duyệt - status = 1)
+     * @param eid Employee ID
+     * @return Số lần nghỉ trong tháng hiện tại
+     */
+    public int countApprovedLeaveRequestsThisMonth(int eid) {
+        try {
+            String sql = """
+                SELECT COUNT(*) as count
+                FROM [RequestForLeave]
+                WHERE [created_by] = ?
+                  AND [status] = 1
+                  AND YEAR([from]) = YEAR(GETDATE())
+                  AND MONTH([from]) = MONTH(GETDATE())
+            """;
+            PreparedStatement stm = connection.prepareStatement(sql);
+            stm.setInt(1, eid);
+            ResultSet rs = stm.executeQuery();
+            if (rs.next()) {
+                return rs.getInt("count");
+            }
+        } catch (SQLException ex) {
+            Logger.getLogger(RequestForLeaveDBContext.class.getName()).log(Level.SEVERE, null, ex);
+        } finally {
+            closeConnection();
+        }
+        return 0;
+    }
+    
+    /**
+     * DTO để chứa thống kê số lần nghỉ của từng employee
+     */
+    public static class EmployeeLeaveStatistics {
+        private int employeeId;
+        private String employeeName;
+        private int leaveCount;
+        
+        public int getEmployeeId() { return employeeId; }
+        public void setEmployeeId(int employeeId) { this.employeeId = employeeId; }
+        
+        public String getEmployeeName() { return employeeName; }
+        public void setEmployeeName(String employeeName) { this.employeeName = employeeName; }
+        
+        public int getLeaveCount() { return leaveCount; }
+        public void setLeaveCount(int leaveCount) { this.leaveCount = leaveCount; }
+    }
+    
+    /**
+     * Lấy thống kê số lần nghỉ của tất cả employees trong tháng hiện tại
+     * @return Danh sách thống kê
+     */
+    public ArrayList<EmployeeLeaveStatistics> getAllEmployeesLeaveStatisticsThisMonth() {
+        ArrayList<EmployeeLeaveStatistics> stats = new ArrayList<>();
+        try {
+            String sql = """
+                SELECT 
+                    e.eid,
+                    e.ename,
+                    COUNT(r.rid) as leave_count
+                FROM [Employee] e
+                LEFT JOIN [RequestForLeave] r 
+                    ON r.[created_by] = e.eid 
+                    AND r.[status] = 1
+                    AND YEAR(r.[from]) = YEAR(GETDATE())
+                    AND MONTH(r.[from]) = MONTH(GETDATE())
+                GROUP BY e.eid, e.ename
+                ORDER BY leave_count DESC, e.ename ASC
+            """;
+            PreparedStatement stm = connection.prepareStatement(sql);
+            ResultSet rs = stm.executeQuery();
+            while (rs.next()) {
+                EmployeeLeaveStatistics stat = new EmployeeLeaveStatistics();
+                stat.setEmployeeId(rs.getInt("eid"));
+                stat.setEmployeeName(rs.getString("ename"));
+                stat.setLeaveCount(rs.getInt("leave_count"));
+                stats.add(stat);
+            }
+        } catch (SQLException ex) {
+            Logger.getLogger(RequestForLeaveDBContext.class.getName()).log(Level.SEVERE, null, ex);
+        } finally {
+            closeConnection();
+        }
+        return stats;
+    }
 
 }

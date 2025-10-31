@@ -1,6 +1,7 @@
 package controller.home; // Make sure package name matches your structure
 
 import controller.iam.BaseRequiredAuthenticationController; // Ensure this import is correct
+import dal.RequestForLeaveDBContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -32,6 +33,15 @@ public class HomeController extends BaseRequiredAuthenticationController {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp, User user)
             throws ServletException, IOException {
+        // Kiểm tra số lần nghỉ trong tháng hiện tại
+        RequestForLeaveDBContext db = new RequestForLeaveDBContext();
+        int leaveCountThisMonth = db.countApprovedLeaveRequestsThisMonth(user.getEmployee().getId());
+        
+        // Truyền thông tin cảnh báo nếu đã nghỉ > 2 lần/tháng
+        boolean showWarning = leaveCountThisMonth > 2;
+        req.setAttribute("leaveCountThisMonth", leaveCountThisMonth);
+        req.setAttribute("showWarning", showWarning);
+        
         // The user object is already available because BaseRequiredAuthenticationController provides it.
         // We just need to show the home view.
         // Make sure the path to home.jsp is correct (starts with / and is outside WEB-INF)

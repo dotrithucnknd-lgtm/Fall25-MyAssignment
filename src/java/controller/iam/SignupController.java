@@ -39,7 +39,23 @@ public class SignupController extends HttpServlet {
         int eid;
         try { eid = Integer.parseInt(eidRaw); }
         catch (NumberFormatException ex) {
-            req.setAttribute("message", "EID không hợp lệ.");
+            req.setAttribute("message", "Mã nhân viên không hợp lệ. Vui lòng nhập số.");
+            req.getRequestDispatcher("/view/auth/signup.jsp").forward(req, resp);
+            return;
+        }
+        
+        // Kiểm tra xem EID có tồn tại trong bảng Employee không
+        dal.EmployeeDBContext empDb = new dal.EmployeeDBContext();
+        model.Employee emp = empDb.get(eid);
+        if (emp == null) {
+            req.setAttribute("message", "Mã nhân viên không tồn tại trong hệ thống. Vui lòng kiểm tra lại.");
+            req.getRequestDispatcher("/view/auth/signup.jsp").forward(req, resp);
+            return;
+        }
+        
+        // Kiểm tra độ dài mật khẩu
+        if (password.length() < 6) {
+            req.setAttribute("message", "Mật khẩu phải có ít nhất 6 ký tự.");
             req.getRequestDispatcher("/view/auth/signup.jsp").forward(req, resp);
             return;
         }

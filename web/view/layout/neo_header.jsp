@@ -73,6 +73,16 @@
         Đơn xin nghỉ
       </a>
       <c:if test="${sessionScope.auth ne null}">
+        <a href="${ctx}/statistics" class="<c:if test="${pageContext.request.requestURI.contains('/statistics')}">active</c:if>">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-right: 8px;">
+            <line x1="18" y1="20" x2="18" y2="10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="12" y1="20" x2="12" y2="4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="6" y1="20" x2="6" y2="14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Thống kê
+        </a>
+      </c:if>
+      <c:if test="${sessionScope.auth ne null}">
         <a href="${ctx}/request/create" class="neo-nav-create">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-right: 8px;">
             <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -115,6 +125,7 @@
             <c:when test="${pageContext.request.requestURI.contains('/landing')}">Trang chủ</c:when>
             <c:when test="${pageContext.request.requestURI.contains('/home')}">Dashboard</c:when>
             <c:when test="${pageContext.request.requestURI.contains('/request')}">Quản lý đơn xin nghỉ</c:when>
+            <c:when test="${pageContext.request.requestURI.contains('/statistics')}">Thống kê nghỉ phép</c:when>
             <c:when test="${pageContext.request.requestURI.contains('/login')}">Đăng nhập</c:when>
             <c:otherwise>Neo Dashboard</c:otherwise>
           </c:choose>

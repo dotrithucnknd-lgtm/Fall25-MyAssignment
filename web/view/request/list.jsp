@@ -1,6 +1,18 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <jsp:include page="/view/layout/neo_header.jsp" />
+        <%-- Hiển thị thông báo lỗi nếu có --%>
+        <c:if test="${not empty sessionScope.errorMessage}">
+            <div class="container">
+                <div class="neo-card" style="background: linear-gradient(135deg, var(--accent-red), var(--accent)); border: 2px solid var(--accent-red); box-shadow: var(--shadow-red); margin-bottom: 24px;">
+                    <p style="margin: 0; color: var(--white); font-size: 14px; line-height: 1.6;">
+                        ⚠️ ${sessionScope.errorMessage}
+                    </p>
+                </div>
+            </div>
+            <c:remove var="errorMessage" scope="session"/>
+        </c:if>
+        
         <%-- Chèn greeting.jsp (Cần đảm bảo file này đã được sửa lỗi) --%>
         <jsp:include page="../util/greeting.jsp"></jsp:include>
         
@@ -91,24 +103,32 @@
                                             ${r.processed_by.name}
                                         </span>
                                         <br>
-                                        <div style="display: flex; gap: 8px; align-items: center; margin-top: 4px;">
-                                            <span style="font-size: 0.85em; color: var(--muted);">Đổi sang:</span>
-                                            <c:if test="${r.status eq 1}">
-                                                <%-- Approved -> Change to Rejected (status=2) --%>
-                                                <a href="${pageContext.request.contextPath}/request/review?rid=${r.id}&status=2" class="btn btn-ghost" style="padding: 4px 10px; font-size: 12px;">Từ chối</a>
-                                            </c:if>
-                                            <c:if test="${r.status eq 2}">
-                                                <%-- Rejected -> Change to Approved (status=1) --%>
-                                                <a href="${pageContext.request.contextPath}/request/review?rid=${r.id}&status=1" class="btn" style="padding: 4px 10px; font-size: 12px;">Duyệt</a>
-                                            </c:if>
-                                        </div>
+                                        <%-- Chỉ hiển thị nút thay đổi trạng thái nếu user hiện tại KHÔNG phải là người tạo đơn --%>
+                                        <c:if test="${sessionScope.auth.employee.id ne r.created_by.id}">
+                                            <div style="display: flex; gap: 8px; align-items: center; margin-top: 4px;">
+                                                <span style="font-size: 0.85em; color: var(--muted);">Đổi sang:</span>
+                                                <c:if test="${r.status eq 1}">
+                                                    <%-- Approved -> Change to Rejected (status=2) --%>
+                                                    <a href="${pageContext.request.contextPath}/request/review?rid=${r.id}&status=2" class="btn btn-ghost" style="padding: 4px 10px; font-size: 12px;">Từ chối</a>
+                                                </c:if>
+                                                <c:if test="${r.status eq 2}">
+                                                    <%-- Rejected -> Change to Approved (status=1) --%>
+                                                    <a href="${pageContext.request.contextPath}/request/review?rid=${r.id}&status=1" class="btn" style="padding: 4px 10px; font-size: 12px;">Duyệt</a>
+                                                </c:if>
+                                            </div>
+                                        </c:if>
                                     </c:when>
                                     <c:otherwise>
-                                        <%-- Nếu chưa xử lý, hiển thị cả 2 nút hành động trên cùng một hàng --%>
-                                        <div style="display: flex; gap: 8px; align-items: center;">
-                                            <a href="${pageContext.request.contextPath}/request/review?rid=${r.id}&status=1" class="btn" style="padding: 6px 12px; font-size: 13px;">Duyệt</a>
-                                            <a href="${pageContext.request.contextPath}/request/review?rid=${r.id}&status=2" class="btn btn-ghost" style="padding: 6px 12px; font-size: 13px;">Từ chối</a>
-                                        </div>
+                                        <%-- Nếu chưa xử lý, chỉ hiển thị nút nếu user hiện tại KHÔNG phải là người tạo đơn --%>
+                                        <c:if test="${sessionScope.auth.employee.id ne r.created_by.id}">
+                                            <div style="display: flex; gap: 8px; align-items: center;">
+                                                <a href="${pageContext.request.contextPath}/request/review?rid=${r.id}&status=1" class="btn" style="padding: 6px 12px; font-size: 13px;">Duyệt</a>
+                                                <a href="${pageContext.request.contextPath}/request/review?rid=${r.id}&status=2" class="btn btn-ghost" style="padding: 6px 12px; font-size: 13px;">Từ chối</a>
+                                            </div>
+                                        </c:if>
+                                        <c:if test="${sessionScope.auth.employee.id eq r.created_by.id}">
+                                            <span style="color: var(--muted); font-size: 0.9em;">Chờ duyệt</span>
+                                        </c:if>
                                     </c:otherwise>
                                 </c:choose>
                             </td>

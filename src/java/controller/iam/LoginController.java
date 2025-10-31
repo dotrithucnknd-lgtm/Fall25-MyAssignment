@@ -42,7 +42,7 @@ public class LoginController extends HttpServlet {
             // =========================================================
             
             // 1. Đặt thông báo lỗi vào Request Scope
-            req.setAttribute("message", "Invalid username or password! Please try again.");
+            req.setAttribute("message", "Tên đăng nhập hoặc mật khẩu không đúng. Vui lòng thử lại.");
             
             // 2. Forward trở lại trang login.jsp
             // Forward giữ lại Request Scope, nên trang login.jsp có thể đọc được ${message}
