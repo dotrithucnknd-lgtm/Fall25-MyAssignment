@@ -14,7 +14,7 @@
                     </div>
                 </c:if>
 
-                <p class="muted">Tạo tài khoản để sử dụng hệ thống.</p>
+                <p class="muted">Tạo tài khoản để sử dụng hệ thống. Mã nhân viên (EID) sẽ được tạo tự động.</p>
 
                 <form class="neo-form" action="${pageContext.request.contextPath}/signup" method="POST">
                     <%-- Ô Họ và tên --%>
@@ -47,18 +47,6 @@
                                name="password" 
                                placeholder="Nhập mật khẩu"
                                required/>
-                    </div>
-
-                    <%-- Ô Mã nhân viên (EID) --%>
-                    <div class="form-group">
-                        <label for="eid">Mã nhân viên (EID)</label>
-                        <input type="number" 
-                               id="eid" 
-                               name="eid" 
-                               placeholder="Ví dụ: 1001" 
-                               value="${param.eid}"
-                               required/>
-                        <p class="muted" style="margin-top: 4px; font-size: 0.85em;">Nhập mã nhân viên của bạn trong hệ thống</p>
                     </div>
 
                     <%-- Nút Submit --%>

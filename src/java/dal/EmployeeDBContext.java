@@ -10,14 +10,44 @@ public class EmployeeDBContext extends DBContext<Employee> {
 
     public int insertAndReturnId(Employee e) {
         try {
-            String sql = "INSERT INTO Employee(ename) VALUES (?)";
-            PreparedStatement stm = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+            if (connection == null) {
+                Logger.getLogger(EmployeeDBContext.class.getName()).log(Level.SEVERE, "Database connection is null");
+                return -1;
+            }
+            try {
+                if (connection.isClosed()) {
+                    Logger.getLogger(EmployeeDBContext.class.getName()).log(Level.SEVERE, "Database connection is closed");
+                    return -1;
+                }
+            } catch (SQLException ex) {
+                Logger.getLogger(EmployeeDBContext.class.getName()).log(Level.SEVERE, "Error checking connection status", ex);
+                return -1;
+            }
+            
+            if (e == null || e.getName() == null || e.getName().isBlank()) {
+                Logger.getLogger(EmployeeDBContext.class.getName()).log(Level.SEVERE, "Employee or employee name is null or blank");
+                return -1;
+            }
+            
+            // Sử dụng SCOPE_IDENTITY() để lấy EID vừa tạo (cách này đáng tin cậy hơn với SQL Server)
+            String sql = "INSERT INTO Employee(ename) OUTPUT INSERTED.eid VALUES (?)";
+            PreparedStatement stm = connection.prepareStatement(sql);
             stm.setString(1, e.getName());
-            stm.executeUpdate();
-            ResultSet rs = stm.getGeneratedKeys();
-            if (rs.next()) return rs.getInt(1);
+            ResultSet rs = stm.executeQuery();
+            
+            if (rs != null && rs.next()) {
+                int eid = rs.getInt(1);
+                if (eid > 0) {
+                    Logger.getLogger(EmployeeDBContext.class.getName()).log(Level.INFO, "Successfully created employee with EID: " + eid + ", name: " + e.getName());
+                    return eid;
+                } else {
+                    Logger.getLogger(EmployeeDBContext.class.getName()).log(Level.SEVERE, "Got EID but it's <= 0 for employee: " + e.getName());
+                }
+            } else {
+                Logger.getLogger(EmployeeDBContext.class.getName()).log(Level.SEVERE, "Failed to get EID from OUTPUT clause for employee: " + e.getName());
+            }
         } catch (SQLException ex) {
-            Logger.getLogger(EmployeeDBContext.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(EmployeeDBContext.class.getName()).log(Level.SEVERE, "Error inserting employee: " + (e != null ? e.getName() : "null"), ex);
         } finally {
             closeConnection();
         }

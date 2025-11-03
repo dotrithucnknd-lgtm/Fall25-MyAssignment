@@ -100,8 +100,22 @@ public class UserDBContext extends DBContext<User> {
         return null;
     }
 
-    public void createOrActivateEnrollment(int uid, int eid) {
+    public boolean createOrActivateEnrollment(int uid, int eid) {
         try {
+            if (connection == null) {
+                Logger.getLogger(UserDBContext.class.getName()).log(Level.SEVERE, "Database connection is null");
+                return false;
+            }
+            try {
+                if (connection.isClosed()) {
+                    Logger.getLogger(UserDBContext.class.getName()).log(Level.SEVERE, "Database connection is closed");
+                    return false;
+                }
+            } catch (SQLException ex) {
+                Logger.getLogger(UserDBContext.class.getName()).log(Level.SEVERE, "Error checking connection status", ex);
+                return false;
+            }
+            
             String sql = """
                                 MERGE Enrollment AS target
                                 USING (SELECT ? AS uid, ? AS eid) AS src
@@ -112,9 +126,22 @@ public class UserDBContext extends DBContext<User> {
             PreparedStatement stm = connection.prepareStatement(sql);
             stm.setInt(1, uid);
             stm.setInt(2, eid);
-            stm.executeUpdate();
+            int rowsAffected = stm.executeUpdate();
+            
+            // Verify enrollment was created/updated correctly
+            if (rowsAffected > 0) {
+                String verifySql = "SELECT 1 FROM Enrollment WHERE uid = ? AND eid = ? AND active = 1";
+                PreparedStatement verifyStm = connection.prepareStatement(verifySql);
+                verifyStm.setInt(1, uid);
+                verifyStm.setInt(2, eid);
+                ResultSet rs = verifyStm.executeQuery();
+                boolean exists = rs.next();
+                return exists;
+            }
+            return false;
         } catch (SQLException ex) {
-            Logger.getLogger(UserDBContext.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(UserDBContext.class.getName()).log(Level.SEVERE, "Error creating/activating enrollment for uid=" + uid + ", eid=" + eid, ex);
+            return false;
         } finally {
             closeConnection();
         }

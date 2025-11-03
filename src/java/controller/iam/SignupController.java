@@ -20,10 +20,9 @@ public class SignupController extends HttpServlet {
         String displayname = req.getParameter("displayname");
         String username = req.getParameter("username");
         String password = req.getParameter("password");
-        String eidRaw = req.getParameter("eid");
 
-        if (displayname == null || username == null || password == null || eidRaw == null
-                || displayname.isBlank() || username.isBlank() || password.isBlank() || eidRaw.isBlank()) {
+        if (displayname == null || username == null || password == null
+                || displayname.isBlank() || username.isBlank() || password.isBlank()) {
             req.setAttribute("message", "Vui lòng nhập đầy đủ thông tin.");
             req.getRequestDispatcher("/view/auth/signup.jsp").forward(req, resp);
             return;
@@ -35,23 +34,6 @@ public class SignupController extends HttpServlet {
             req.getRequestDispatcher("/view/auth/signup.jsp").forward(req, resp);
             return;
         }
-
-        int eid;
-        try { eid = Integer.parseInt(eidRaw); }
-        catch (NumberFormatException ex) {
-            req.setAttribute("message", "Mã nhân viên không hợp lệ. Vui lòng nhập số.");
-            req.getRequestDispatcher("/view/auth/signup.jsp").forward(req, resp);
-            return;
-        }
-        
-        // Kiểm tra xem EID có tồn tại trong bảng Employee không
-        dal.EmployeeDBContext empDb = new dal.EmployeeDBContext();
-        model.Employee emp = empDb.get(eid);
-        if (emp == null) {
-            req.setAttribute("message", "Mã nhân viên không tồn tại trong hệ thống. Vui lòng kiểm tra lại.");
-            req.getRequestDispatcher("/view/auth/signup.jsp").forward(req, resp);
-            return;
-        }
         
         // Kiểm tra độ dài mật khẩu
         if (password.length() < 6) {
@@ -60,12 +42,26 @@ public class SignupController extends HttpServlet {
             return;
         }
 
+        // 1) Tạo Employee mới với EID tự động (không trùng lặp)
+        dal.EmployeeDBContext empDb = new dal.EmployeeDBContext();
+        model.Employee newEmp = new model.Employee();
+        newEmp.setName(displayname);
+        int eid = empDb.insertAndReturnId(newEmp);
+        
+        if (eid <= 0) {
+            java.util.logging.Logger.getLogger(SignupController.class.getName()).log(java.util.logging.Level.SEVERE, 
+                "Failed to create employee. Displayname: " + displayname);
+            req.setAttribute("message", "Không thể tạo mã nhân viên. Vui lòng kiểm tra log server hoặc liên hệ quản trị viên.");
+            req.getRequestDispatcher("/view/auth/signup.jsp").forward(req, resp);
+            return;
+        }
+
+        // 2) Tạo user và lấy uid
         model.iam.User u = new model.iam.User();
         u.setDisplayname(displayname);
         u.setUsername(username);
         u.setPassword(password);
-
-        // 1) Tạo user và lấy uid
+        
         dal.UserDBContext dbInsert = new dal.UserDBContext();
         Integer uid = dbInsert.insertAndReturnId(u);
         if (uid == null) {
@@ -73,11 +69,19 @@ public class SignupController extends HttpServlet {
             req.getRequestDispatcher("/view/auth/signup.jsp").forward(req, resp);
             return;
         }
-        // 2) Liên kết Enrollment active=1 theo EID được nhập
+        
+        // 3) Liên kết Enrollment active=1 với EID vừa tạo
         dal.UserDBContext dbEnroll = new dal.UserDBContext();
-        dbEnroll.createOrActivateEnrollment(uid, eid);
+        boolean enrollmentCreated = dbEnroll.createOrActivateEnrollment(uid, eid);
+        if (!enrollmentCreated) {
+            // Nếu enrollment thất bại, xóa user và employee vừa tạo
+            dbInsert.deleteById(uid);
+            req.setAttribute("message", "Không thể liên kết mã nhân viên. Vui lòng thử lại hoặc liên hệ quản trị viên.");
+            req.getRequestDispatcher("/view/auth/signup.jsp").forward(req, resp);
+            return;
+        }
 
-        // 3) Đăng nhập ngay
+        // 4) Đăng nhập ngay
         dal.UserDBContext dbLogin = new dal.UserDBContext();
         model.iam.User logged = dbLogin.get(username, password);
         if (logged != null) {
