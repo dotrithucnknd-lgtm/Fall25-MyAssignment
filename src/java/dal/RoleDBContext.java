@@ -42,7 +42,7 @@ public class RoleDBContext extends DBContext<Role> {
                 if(rid != current.getId())
                 {
                     current = new Role();
-                    current.setId(id);
+                    current.setId(rid);  // Fix: set role id, not user id
                     current.setName(rs.getString("rname"));
                     roles.add(current);
                 }

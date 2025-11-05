@@ -198,11 +198,16 @@ public class RequestForLeaveDBContext extends DBContext<RequestForLeave> {
     @Override
     public void insert(RequestForLeave model) {
         try {
+            int leavetypeId = 1; // Default value
+            if (model.getLeaveType() != null && model.getLeaveType().getId() > 0) {
+                leavetypeId = model.getLeaveType().getId();
+            }
+            
             String sql = """
                                 INSERT INTO [RequestForLeave]
-                                    ([created_by],[created_time],[from],[to],[reason],[status],[processed_by])
+                                    ([created_by],[created_time],[from],[to],[reason],[status],[processed_by],[leavetype_id])
                                 VALUES
-                                    (?,?,?,?,?,0,NULL)
+                                    (?,?,?,?,?,0,NULL,?)
                            """;
             PreparedStatement stm = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
             stm.setInt(1, model.getCreated_by().getId());
@@ -210,6 +215,7 @@ public class RequestForLeaveDBContext extends DBContext<RequestForLeave> {
             stm.setDate(3, model.getFrom());
             stm.setDate(4, model.getTo());
             stm.setString(5, model.getReason());
+            stm.setInt(6, leavetypeId);
             stm.executeUpdate();
             
             // Lấy generated ID và set vào model
@@ -229,11 +235,16 @@ public class RequestForLeaveDBContext extends DBContext<RequestForLeave> {
      */
     public int insertAndReturnId(RequestForLeave model) {
         try {
+            int leavetypeId = 1; // Default value
+            if (model.getLeaveType() != null && model.getLeaveType().getId() > 0) {
+                leavetypeId = model.getLeaveType().getId();
+            }
+            
             String sql = """
                                 INSERT INTO [RequestForLeave]
-                                    ([created_by],[created_time],[from],[to],[reason],[status],[processed_by])
+                                    ([created_by],[created_time],[from],[to],[reason],[status],[processed_by],[leavetype_id])
                                 VALUES
-                                    (?,?,?,?,?,0,NULL)
+                                    (?,?,?,?,?,0,NULL,?)
                            """;
             PreparedStatement stm = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
             stm.setInt(1, model.getCreated_by().getId());
@@ -241,6 +252,7 @@ public class RequestForLeaveDBContext extends DBContext<RequestForLeave> {
             stm.setDate(3, model.getFrom());
             stm.setDate(4, model.getTo());
             stm.setString(5, model.getReason());
+            stm.setInt(6, leavetypeId);
             stm.executeUpdate();
             
             ResultSet rs = stm.getGeneratedKeys();

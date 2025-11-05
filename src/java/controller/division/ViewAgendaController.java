@@ -21,12 +21,14 @@ public class ViewAgendaController extends BaseRequiredAuthorizationController {
 
     @Override
     protected void processPost(HttpServletRequest req, HttpServletResponse resp, User user) throws ServletException, IOException {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        // Forward to GET for now
+        processGet(req, resp, user);
     }
 
     @Override
     protected void processGet(HttpServletRequest req, HttpServletResponse resp, User user) throws ServletException, IOException {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        // Redirect to home for now - can be implemented later
+        resp.sendRedirect(req.getContextPath() + "/home");
     }
     
 }

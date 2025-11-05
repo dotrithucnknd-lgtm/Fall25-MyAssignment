@@ -38,8 +38,19 @@ public class CreateController extends BaseRequiredAuthenticationController {
         // 2. Tạo đối tượng RequestForLeave
         RequestForLeave rfl = new RequestForLeave();
         
-        // Map LeaveType: GÁN CỨNG (Hoặc lấy từ input nếu bạn muốn người dùng tự nhập ID)
+        // Map LeaveType: GÁN CỨNG (mặc định leavetype_id = 1)
         LeaveType lt = new LeaveType();
+        if (ltId != null && !ltId.trim().isEmpty()) {
+            try {
+                lt.setId(Integer.parseInt(ltId));
+            } catch (NumberFormatException e) {
+                lt.setId(1); // Default to 1 if invalid
+            }
+        } else {
+            lt.setId(1); // Default to 1
+        }
+        rfl.setLeaveType(lt);
+        
         // Map Ngày tháng
         rfl.setFrom(Date.valueOf(from));
         rfl.setTo(Date.valueOf(to));

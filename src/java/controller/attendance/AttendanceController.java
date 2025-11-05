@@ -296,7 +296,7 @@ public class AttendanceController extends BaseRequiredAuthenticationController {
             // requestId đã được parse ở đầu try block, sử dụng nó
             if (requestId > 0) {
                 req.getSession().setAttribute("errorMessage", "Định dạng ngày hoặc giờ không hợp lệ.");
-                resp.sendRedirect(req.getContextPath() + "/attendance/check/" + requestId);
+                resp.sendRedirect(req.getContextPath() + "/attendance/check/" + requestId); 
             } else {
                 req.getSession().setAttribute("errorMessage", "Định dạng ngày hoặc giờ không hợp lệ.");
                 resp.sendRedirect(req.getContextPath() + "/attendance/");
