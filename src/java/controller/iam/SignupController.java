@@ -12,11 +12,17 @@ public class SignupController extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        req.getRequestDispatcher("/view/auth/signup.jsp").forward(req, resp);
+        // Tính năng đăng ký đã bị vô hiệu hóa
+        resp.sendError(HttpServletResponse.SC_NOT_FOUND, "Tính năng đăng ký không còn khả dụng.");
     }
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        // Tính năng đăng ký đã bị vô hiệu hóa
+        resp.sendError(HttpServletResponse.SC_NOT_FOUND, "Tính năng đăng ký không còn khả dụng.");
+        return;
+        
+        /* DISABLED - Code cũ đã bị comment
         String displayname = req.getParameter("displayname");
         String username = req.getParameter("username");
         String password = req.getParameter("password");
@@ -93,6 +99,7 @@ public class SignupController extends HttpServlet {
 
         req.setAttribute("message", "Đăng ký thành công nhưng không thể đăng nhập tự động. Hãy thử đăng nhập.");
         req.getRequestDispatcher("/view/auth/login.jsp").forward(req, resp);
+        */
     }
 }
 

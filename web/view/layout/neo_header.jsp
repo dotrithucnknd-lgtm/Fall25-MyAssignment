@@ -73,6 +73,15 @@
         Đơn xin nghỉ
       </a>
       <c:if test="${sessionScope.auth ne null}">
+        <a href="${ctx}/attendance/" class="<c:if test="${pageContext.request.requestURI.contains('/attendance')}">active</c:if>">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-right: 8px;">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <polyline points="12 6 12 12 16 14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Chấm công
+        </a>
+      </c:if>
+      <c:if test="${sessionScope.auth ne null}">
         <a href="${ctx}/statistics" class="<c:if test="${pageContext.request.requestURI.contains('/statistics')}">active</c:if>">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-right: 8px;">
             <line x1="18" y1="20" x2="18" y2="10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -80,6 +89,17 @@
             <line x1="6" y1="20" x2="6" y2="14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
           Thống kê
+        </a>
+      </c:if>
+      <c:if test="${sessionScope.auth ne null}">
+        <a href="${ctx}/admin/create-user" class="<c:if test="${pageContext.request.requestURI.contains('/admin/create-user')}">active</c:if>">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-right: 8px;">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="8.5" cy="7" r="4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="20" y1="8" x2="20" y2="14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="23" y1="11" x2="17" y2="11" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Tạo User
         </a>
       </c:if>
       <c:if test="${sessionScope.auth ne null}">
@@ -125,6 +145,8 @@
             <c:when test="${pageContext.request.requestURI.contains('/landing')}">Trang chủ</c:when>
             <c:when test="${pageContext.request.requestURI.contains('/home')}">Dashboard</c:when>
             <c:when test="${pageContext.request.requestURI.contains('/request')}">Quản lý đơn xin nghỉ</c:when>
+            <c:when test="${pageContext.request.requestURI.contains('/attendance')}">Chấm công theo ngày nghỉ</c:when>
+            <c:when test="${pageContext.request.requestURI.contains('/admin/create-user')}">Tạo User Mới</c:when>
             <c:when test="${pageContext.request.requestURI.contains('/statistics')}">Thống kê nghỉ phép</c:when>
             <c:when test="${pageContext.request.requestURI.contains('/login')}">Đăng nhập</c:when>
             <c:otherwise>Neo Dashboard</c:otherwise>

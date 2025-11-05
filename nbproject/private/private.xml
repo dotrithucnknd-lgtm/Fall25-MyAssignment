@@ -3,14 +3,11 @@
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
-            <file>file:/H:/PRJ301/Fall25Assm/web/view/auth/login.jsp</file>
-            <file>file:/H:/PRJ301/Fall25Assm/src/java/controller/request/CreateController.java</file>
-            <file>file:/H:/PRJ301/Fall25Assm/src/java/controller/iam/LogoutController.java</file>
-            <file>file:/H:/PRJ301/Fall25Assm/web/assets/css/app.css</file>
-            <file>file:/H:/PRJ301/Fall25Assm/src/java/dal/RequestForLeaveHistoryDBContext.java</file>
-            <file>file:/H:/PRJ301/Fall25Assm/src/java/controller/iam/LoginController.java</file>
-            <file>file:/H:/PRJ301/Fall25Assm/src/java/controller/site/LandingController.java</file>
-            <file>file:/H:/PRJ301/Fall25Assm/src/java/model/Employee.java</file>
+            <file>file:/H:/PRJ301/Fall25Assm/src/java/controller/iam/BaseRequiredAuthenticationController.java</file>
+            <file>file:/H:/PRJ301/Fall25Assm/src/java/controller/attendance/AttendanceController.java</file>
+            <file>file:/H:/PRJ301/Fall25Assm/src/java/controller/iam/BaseRequiredAuthorizationController.java</file>
+            <file>file:/H:/PRJ301/Fall25Assm/src/java/controller/division/ViewAgendaController.java</file>
+            <file>file:/H:/PRJ301/Fall25Assm/src/java/controller/iam/SignupController.java</file>
         </group>
     </open-files>
 </project-private>

@@ -5,10 +5,10 @@
         <div class="hero mb-16">
             <div>
                 <h1 style="margin:0 0 8px 0;">Chào mừng đến hệ thống Nghỉ phép</h1>
-                <p>Theo dõi thông báo, tin mới và blog nội bộ. Đăng nhập hoặc đăng ký để bắt đầu.</p>
+                <p>Theo dõi thông báo, tin mới và blog nội bộ. Đăng nhập để bắt đầu.</p>
                 <div style="margin-top:12px;" class="actions">
                     <a class="neo-btn" href="${pageContext.request.contextPath}/login">Đăng nhập</a>
-                    <a class="neo-btn ghost" href="${pageContext.request.contextPath}/signup">Đăng ký</a>
+                    <%-- Link đăng ký đã bị vô hiệu hóa --%>
                 </div>
             </div>
             <img src="${pageContext.request.contextPath}/assets/img/home-decor-2.jpg" alt="Welcome" style="max-width: 400px; max-height: 280px; object-fit: cover;" />

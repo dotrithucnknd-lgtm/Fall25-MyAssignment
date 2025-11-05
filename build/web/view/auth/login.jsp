@@ -35,7 +35,7 @@
                     <%-- Nút Submit --%>
                     <div class="actions">
                         <button type="submit" class="neo-btn">Log in</button>
-                        <a class="neo-btn ghost" href="${pageContext.request.contextPath}/signup">Đăng ký</a>
+                        <%-- Link đăng ký đã bị vô hiệu hóa --%>
                     </div>
                 </form>
                 <p class="muted" style="margin-top: 16px;">

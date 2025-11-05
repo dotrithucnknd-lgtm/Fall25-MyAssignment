@@ -29,22 +29,33 @@ public class EmployeeDBContext extends DBContext<Employee> {
                 return -1;
             }
             
-            // Sử dụng SCOPE_IDENTITY() để lấy EID vừa tạo (cách này đáng tin cậy hơn với SQL Server)
+            // Sử dụng OUTPUT INSERTED để lấy EID vừa tạo (cách này đáng tin cậy hơn với SQL Server)
             String sql = "INSERT INTO Employee(ename) OUTPUT INSERTED.eid VALUES (?)";
             PreparedStatement stm = connection.prepareStatement(sql);
             stm.setString(1, e.getName());
+            
+            Logger.getLogger(EmployeeDBContext.class.getName()).log(Level.INFO, 
+                "Executing INSERT for employee: " + e.getName());
+            
             ResultSet rs = stm.executeQuery();
             
             if (rs != null && rs.next()) {
                 int eid = rs.getInt(1);
+                Logger.getLogger(EmployeeDBContext.class.getName()).log(Level.INFO, 
+                    "Got EID from OUTPUT: " + eid);
+                
                 if (eid > 0) {
-                    Logger.getLogger(EmployeeDBContext.class.getName()).log(Level.INFO, "Successfully created employee with EID: " + eid + ", name: " + e.getName());
+                    Logger.getLogger(EmployeeDBContext.class.getName()).log(Level.INFO, 
+                        "Successfully created employee with EID: " + eid + ", name: " + e.getName());
                     return eid;
                 } else {
-                    Logger.getLogger(EmployeeDBContext.class.getName()).log(Level.SEVERE, "Got EID but it's <= 0 for employee: " + e.getName());
+                    Logger.getLogger(EmployeeDBContext.class.getName()).log(Level.SEVERE, 
+                        "Got EID but it's <= 0 for employee: " + e.getName());
                 }
             } else {
-                Logger.getLogger(EmployeeDBContext.class.getName()).log(Level.SEVERE, "Failed to get EID from OUTPUT clause for employee: " + e.getName());
+                Logger.getLogger(EmployeeDBContext.class.getName()).log(Level.SEVERE, 
+                    "Failed to get EID from OUTPUT clause for employee: " + e.getName() + 
+                    " - ResultSet is null or empty");
             }
         } catch (SQLException ex) {
             Logger.getLogger(EmployeeDBContext.class.getName()).log(Level.SEVERE, "Error inserting employee: " + (e != null ? e.getName() : "null"), ex);
@@ -55,7 +66,33 @@ public class EmployeeDBContext extends DBContext<Employee> {
     }
 
     @Override
-    public ArrayList<Employee> list() { return new ArrayList<>(); }
+    public ArrayList<Employee> list() { 
+        return getAllEmployees();
+    }
+    
+    /**
+     * Lấy danh sách tất cả employees
+     */
+    public ArrayList<Employee> getAllEmployees() {
+        ArrayList<Employee> employees = new ArrayList<>();
+        try {
+            String sql = "SELECT eid, ename FROM Employee ORDER BY ename ASC";
+            PreparedStatement stm = connection.prepareStatement(sql);
+            ResultSet rs = stm.executeQuery();
+            
+            while (rs.next()) {
+                Employee emp = new Employee();
+                emp.setId(rs.getInt("eid"));
+                emp.setName(rs.getString("ename"));
+                employees.add(emp);
+            }
+        } catch (SQLException ex) {
+            Logger.getLogger(EmployeeDBContext.class.getName()).log(Level.SEVERE, null, ex);
+        } finally {
+            closeConnection();
+        }
+        return employees;
+    }
     
     @Override
     public Employee get(int id) {
