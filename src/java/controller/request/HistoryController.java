@@ -1,6 +1,6 @@
 package controller.request;
 
-import controller.iam.BaseRequiredAuthenticationController;
+import controller.iam.BaseRequiredAuthorizationController;
 import dal.ActivityLogDBContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -13,9 +13,9 @@ import model.iam.User;
 import util.LogUtil;
 
 @WebServlet(urlPatterns="/request/history")
-public class HistoryController extends BaseRequiredAuthenticationController {
+public class HistoryController extends BaseRequiredAuthorizationController {
 
-    private void process(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    private void process(HttpServletRequest req, HttpServletResponse resp, User user) throws ServletException, IOException {
         String ridRaw = req.getParameter("rid");
         if (ridRaw == null) {
             resp.sendRedirect(req.getContextPath() + "/request/list");
@@ -102,13 +102,13 @@ public class HistoryController extends BaseRequiredAuthenticationController {
     }
 
     @Override
-    protected void doPost(HttpServletRequest req, HttpServletResponse resp, User user) throws ServletException, IOException {
-        process(req, resp);
+    protected void processPost(HttpServletRequest req, HttpServletResponse resp, User user) throws ServletException, IOException {
+        process(req, resp, user);
     }
 
     @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp, User user) throws ServletException, IOException {
-        process(req, resp);
+    protected void processGet(HttpServletRequest req, HttpServletResponse resp, User user) throws ServletException, IOException {
+        process(req, resp, user);
     }
     
     /**

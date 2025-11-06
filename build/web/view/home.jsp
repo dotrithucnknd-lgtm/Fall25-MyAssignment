@@ -7,8 +7,12 @@
                     <h1>Quản lý nghỉ phép dễ dàng</h1>
                     <p>Theo dõi, tạo và phê duyệt đơn xin nghỉ chỉ trong vài bước.</p>
                     <div style="margin-top:12px;" class="actions">
-                        <a class="btn" href="${pageContext.request.contextPath}/request/create">Tạo đơn mới</a>
-                        <a class="btn-ghost" href="${pageContext.request.contextPath}/request/list">Xem đơn</a>
+                        <c:if test="${hasPermission.check('/request/create')}">
+                            <a class="btn" href="${pageContext.request.contextPath}/request/create">Tạo đơn mới</a>
+                        </c:if>
+                        <c:if test="${hasPermission.check('/request/list')}">
+                            <a class="btn-ghost" href="${pageContext.request.contextPath}/request/list">Xem đơn</a>
+                        </c:if>
                     </div>
                 </div>
                 <img src="${pageContext.request.contextPath}/assets/img/home-decor-1.jpg" alt="Hero" style="max-width: 400px; max-height: 280px; object-fit: cover;" />
@@ -43,20 +47,24 @@
             <h2>Chức năng chính:</h2>
             
             <div class="neo-grid">
-                <div class="neo-card col-6">
-                    <h3 style="margin-top:0;">Tạo đơn xin nghỉ</h3>
-                    <p class="muted">Gửi đơn xin nghỉ phép mới.</p>
-                    <div class="actions">
-                        <a class="neo-btn" href="${pageContext.request.contextPath}/request/create">Mở</a>
+                <c:if test="${hasPermission.check('/request/create')}">
+                    <div class="neo-card col-6">
+                        <h3 style="margin-top:0;">Tạo đơn xin nghỉ</h3>
+                        <p class="muted">Gửi đơn xin nghỉ phép mới.</p>
+                        <div class="actions">
+                            <a class="neo-btn" href="${pageContext.request.contextPath}/request/create">Mở</a>
+                        </div>
                     </div>
-                </div>
-                <div class="neo-card col-6">
-                    <h3 style="margin-top:0;">Xem đơn xin nghỉ</h3>
-                    <p class="muted">Xem đơn xin nghỉ và kết quả duyệt của bạn.</p>
-                    <div class="actions">
-                        <a class="neo-btn" href="${pageContext.request.contextPath}/request/list">Mở</a>
+                </c:if>
+                <c:if test="${hasPermission.check('/request/list')}">
+                    <div class="neo-card col-6">
+                        <h3 style="margin-top:0;">Xem đơn xin nghỉ</h3>
+                        <p class="muted">Xem đơn xin nghỉ và kết quả duyệt của bạn.</p>
+                        <div class="actions">
+                            <a class="neo-btn" href="${pageContext.request.contextPath}/request/list">Mở</a>
+                        </div>
                     </div>
-                </div>
+                </c:if>
             </div>
 
             <div class="mt-16">

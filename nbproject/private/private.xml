@@ -3,11 +3,9 @@
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
-            <file>file:/H:/PRJ301/Fall25Assm/src/java/controller/iam/BaseRequiredAuthenticationController.java</file>
-            <file>file:/H:/PRJ301/Fall25Assm/src/java/controller/attendance/AttendanceController.java</file>
-            <file>file:/H:/PRJ301/Fall25Assm/src/java/controller/iam/BaseRequiredAuthorizationController.java</file>
+            <file>file:/H:/PRJ301/Fall25Assm/src/java/dal/DBContext.java</file>
+            <file>file:/H:/PRJ301/Fall25Assm/src/java/dal/UserDBContext.java</file>
             <file>file:/H:/PRJ301/Fall25Assm/src/java/controller/division/ViewAgendaController.java</file>
-            <file>file:/H:/PRJ301/Fall25Assm/src/java/controller/iam/SignupController.java</file>
         </group>
     </open-files>
 </project-private>

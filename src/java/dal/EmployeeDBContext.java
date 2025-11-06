@@ -115,6 +115,43 @@ public class EmployeeDBContext extends DBContext<Employee> {
         return null;
     }
     
+    /**
+     * Lấy danh sách nhân viên trong division (bao gồm supervisor và subordinates)
+     */
+    public ArrayList<Employee> getDivisionEmployees(int eid) {
+        ArrayList<Employee> employees = new ArrayList<>();
+        try {
+            String sql = """
+                WITH Org AS (
+                    -- get current employee - eid = @eid
+                    SELECT *, 0 as lvl FROM Employee e WHERE e.eid = ?
+                    
+                    UNION ALL
+                    -- expand to other subordinates
+                    SELECT c.*,o.lvl + 1 as lvl FROM Employee c JOIN Org o ON c.supervisorid = o.eid
+                )
+                SELECT DISTINCT e.eid, e.ename
+                FROM Org e
+                ORDER BY e.ename ASC
+            """;
+            PreparedStatement stm = connection.prepareStatement(sql);
+            stm.setInt(1, eid);
+            ResultSet rs = stm.executeQuery();
+            
+            while (rs.next()) {
+                Employee emp = new Employee();
+                emp.setId(rs.getInt("eid"));
+                emp.setName(rs.getString("ename"));
+                employees.add(emp);
+            }
+        } catch (SQLException ex) {
+            Logger.getLogger(EmployeeDBContext.class.getName()).log(Level.SEVERE, null, ex);
+        } finally {
+            closeConnection();
+        }
+        return employees;
+    }
+    
     @Override
     public void insert(Employee model) {}
     @Override

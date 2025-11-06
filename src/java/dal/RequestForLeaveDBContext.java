@@ -198,16 +198,11 @@ public class RequestForLeaveDBContext extends DBContext<RequestForLeave> {
     @Override
     public void insert(RequestForLeave model) {
         try {
-            int leavetypeId = 1; // Default value
-            if (model.getLeaveType() != null && model.getLeaveType().getId() > 0) {
-                leavetypeId = model.getLeaveType().getId();
-            }
-            
             String sql = """
                                 INSERT INTO [RequestForLeave]
-                                    ([created_by],[created_time],[from],[to],[reason],[status],[processed_by],[leavetype_id])
+                                    ([created_by],[created_time],[from],[to],[reason],[status],[processed_by])
                                 VALUES
-                                    (?,?,?,?,?,0,NULL,?)
+                                    (?,?,?,?,?,0,NULL)
                            """;
             PreparedStatement stm = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
             stm.setInt(1, model.getCreated_by().getId());
@@ -215,7 +210,6 @@ public class RequestForLeaveDBContext extends DBContext<RequestForLeave> {
             stm.setDate(3, model.getFrom());
             stm.setDate(4, model.getTo());
             stm.setString(5, model.getReason());
-            stm.setInt(6, leavetypeId);
             stm.executeUpdate();
             
             // Lấy generated ID và set vào model
@@ -235,16 +229,11 @@ public class RequestForLeaveDBContext extends DBContext<RequestForLeave> {
      */
     public int insertAndReturnId(RequestForLeave model) {
         try {
-            int leavetypeId = 1; // Default value
-            if (model.getLeaveType() != null && model.getLeaveType().getId() > 0) {
-                leavetypeId = model.getLeaveType().getId();
-            }
-            
             String sql = """
                                 INSERT INTO [RequestForLeave]
-                                    ([created_by],[created_time],[from],[to],[reason],[status],[processed_by],[leavetype_id])
+                                    ([created_by],[created_time],[from],[to],[reason],[status],[processed_by])
                                 VALUES
-                                    (?,?,?,?,?,0,NULL,?)
+                                    (?,?,?,?,?,?,?)
                            """;
             PreparedStatement stm = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
             stm.setInt(1, model.getCreated_by().getId());
@@ -252,7 +241,17 @@ public class RequestForLeaveDBContext extends DBContext<RequestForLeave> {
             stm.setDate(3, model.getFrom());
             stm.setDate(4, model.getTo());
             stm.setString(5, model.getReason());
-            stm.setInt(6, leavetypeId);
+            
+            // Sử dụng status và processed_by từ model (có thể được set từ controller)
+            int status = model.getStatus();
+            stm.setInt(6, status);
+            
+            if (model.getProcessed_by() != null) {
+                stm.setInt(7, model.getProcessed_by().getId());
+            } else {
+                stm.setNull(7, java.sql.Types.INTEGER);
+            }
+            
             stm.executeUpdate();
             
             ResultSet rs = stm.getGeneratedKeys();
@@ -381,6 +380,81 @@ public class RequestForLeaveDBContext extends DBContext<RequestForLeave> {
             closeConnection();
         }
         return stats;
+    }
+    
+    /**
+     * Lấy danh sách đơn nghỉ phép của division (employee và subordinates) theo tháng
+     * @param eid Employee ID (supervisor)
+     * @param year Năm
+     * @param month Tháng (1-12)
+     * @return Danh sách đơn nghỉ phép
+     */
+    public ArrayList<RequestForLeave> getDivisionAgendaByMonth(int eid, int year, int month) {
+        ArrayList<RequestForLeave> rfls = new ArrayList<>();
+        try {
+            String sql = """
+                WITH Org AS (
+                    -- get current employee - eid = @eid
+                    SELECT *, 0 as lvl FROM Employee e WHERE e.eid = ?
+                    
+                    UNION ALL
+                    -- expand to other subordinates
+                    SELECT c.*,o.lvl + 1 as lvl FROM Employee c JOIN Org o ON c.supervisorid = o.eid
+                )
+                SELECT
+                    r.[rid],
+                    r.[created_by],
+                    e.ename as [created_name],
+                    r.[created_time],
+                    r.[from],
+                    r.[to],
+                    r.[reason],
+                    r.[status],
+                    r.[processed_by],
+                    p.ename as [processed_name]
+                FROM Org e 
+                INNER JOIN [RequestForLeave] r ON e.eid = r.created_by
+                LEFT JOIN Employee p ON p.eid = r.processed_by
+                WHERE YEAR(r.[from]) = ? AND MONTH(r.[from]) = ?
+                ORDER BY r.[from] ASC, e.ename ASC
+            """;
+            PreparedStatement stm = connection.prepareStatement(sql);
+            stm.setInt(1, eid);
+            stm.setInt(2, year);
+            stm.setInt(3, month);
+            ResultSet rs = stm.executeQuery();
+            
+            while (rs.next()) {
+                RequestForLeave rfl = new RequestForLeave();
+                rfl.setId(rs.getInt("rid"));
+                
+                rfl.setCreated_time(rs.getTimestamp("created_time"));
+                rfl.setFrom(rs.getDate("from"));
+                rfl.setTo(rs.getDate("to"));
+                rfl.setReason(rs.getString("reason"));
+                rfl.setStatus(rs.getInt("status"));
+                
+                Employee created_by = new Employee();
+                created_by.setId(rs.getInt("created_by"));
+                created_by.setName(rs.getString("created_name"));
+                rfl.setCreated_by(created_by);
+                
+                int processed_by_id = rs.getInt("processed_by");
+                if (processed_by_id != 0) {
+                    Employee processed_by = new Employee();
+                    processed_by.setId(rs.getInt("processed_by"));
+                    processed_by.setName(rs.getString("processed_name"));
+                    rfl.setProcessed_by(processed_by);
+                }
+                
+                rfls.add(rfl);
+            }
+        } catch (SQLException ex) {
+            Logger.getLogger(RequestForLeaveDBContext.class.getName()).log(Level.SEVERE, null, ex);
+        } finally {
+            closeConnection();
+        }
+        return rfls;
     }
 
 }

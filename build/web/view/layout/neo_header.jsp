@@ -54,25 +54,29 @@
         </svg>
         Trang chủ
       </a>
-      <a href="${ctx}/home" class="<c:if test="${pageContext.request.requestURI.contains('/home')}">active</c:if>">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-right: 8px;">
-          <rect x="3" y="3" width="7" height="7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <rect x="14" y="3" width="7" height="7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <rect x="14" y="14" width="7" height="7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <rect x="3" y="14" width="7" height="7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        Dashboard
-      </a>
-      <a href="${ctx}/request/list" class="<c:if test="${pageContext.request.requestURI.contains('/request')}">active</c:if>">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-right: 8px;">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <polyline points="14 2 14 8 20 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <line x1="16" y1="13" x2="8" y2="13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <line x1="16" y1="17" x2="8" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        Đơn xin nghỉ
-      </a>
-      <c:if test="${sessionScope.auth ne null}">
+      <c:if test="${hasPermission.check('/home')}">
+        <a href="${ctx}/home" class="<c:if test="${pageContext.request.requestURI.contains('/home')}">active</c:if>">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-right: 8px;">
+            <rect x="3" y="3" width="7" height="7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <rect x="14" y="3" width="7" height="7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <rect x="14" y="14" width="7" height="7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <rect x="3" y="14" width="7" height="7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Dashboard
+        </a>
+      </c:if>
+      <c:if test="${hasPermission.check('/request/list')}">
+        <a href="${ctx}/request/list" class="<c:if test="${pageContext.request.requestURI.contains('/request')}">active</c:if>">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-right: 8px;">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <polyline points="14 2 14 8 20 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="16" y1="13" x2="8" y2="13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="16" y1="17" x2="8" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Đơn xin nghỉ
+        </a>
+      </c:if>
+      <c:if test="${hasPermission.check('/attendance')}">
         <a href="${ctx}/attendance/" class="<c:if test="${pageContext.request.requestURI.contains('/attendance')}">active</c:if>">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-right: 8px;">
             <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -81,7 +85,7 @@
           Chấm công
         </a>
       </c:if>
-      <c:if test="${sessionScope.auth ne null}">
+      <c:if test="${hasPermission.check('/statistics')}">
         <a href="${ctx}/statistics" class="<c:if test="${pageContext.request.requestURI.contains('/statistics')}">active</c:if>">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-right: 8px;">
             <line x1="18" y1="20" x2="18" y2="10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -91,7 +95,18 @@
           Thống kê
         </a>
       </c:if>
-      <c:if test="${sessionScope.auth ne null}">
+      <c:if test="${hasPermission.check('/division/agenda')}">
+        <a href="${ctx}/division/agenda" class="<c:if test="${pageContext.request.requestURI.contains('/division/agenda')}">active</c:if>">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-right: 8px;">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="16" y1="2" x2="16" y2="6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="8" y1="2" x2="8" y2="6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Lịch Division
+        </a>
+      </c:if>
+      <c:if test="${hasPermission.check('/admin/create-user')}">
         <a href="${ctx}/admin/create-user" class="<c:if test="${pageContext.request.requestURI.contains('/admin/create-user')}">active</c:if>">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-right: 8px;">
             <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -102,7 +117,7 @@
           Tạo User
         </a>
       </c:if>
-      <c:if test="${sessionScope.auth ne null}">
+      <c:if test="${hasPermission.check('/request/create')}">
         <a href="${ctx}/request/create" class="neo-nav-create">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-right: 8px;">
             <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -148,6 +163,7 @@
             <c:when test="${pageContext.request.requestURI.contains('/attendance')}">Chấm công theo ngày nghỉ</c:when>
             <c:when test="${pageContext.request.requestURI.contains('/admin/create-user')}">Tạo User Mới</c:when>
             <c:when test="${pageContext.request.requestURI.contains('/statistics')}">Thống kê nghỉ phép</c:when>
+            <c:when test="${pageContext.request.requestURI.contains('/division/agenda')}">Lịch Division</c:when>
             <c:when test="${pageContext.request.requestURI.contains('/login')}">Đăng nhập</c:when>
             <c:otherwise>Neo Dashboard</c:otherwise>
           </c:choose>

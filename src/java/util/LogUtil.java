@@ -88,6 +88,8 @@ public class LogUtil {
         public static final String CHECK_IN_ATTENDANCE = "CHECK_IN_ATTENDANCE";
         public static final String UPDATE_ATTENDANCE = "UPDATE_ATTENDANCE";
         public static final String CREATE_USER = "CREATE_USER";
+        public static final String RESET_PASSWORD = "RESET_PASSWORD";
+        public static final String DELETE_USER = "DELETE_USER";
     }
     
     // Các constants cho entity types

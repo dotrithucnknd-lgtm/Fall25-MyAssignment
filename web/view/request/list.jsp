@@ -107,11 +107,11 @@
                                         <c:if test="${sessionScope.auth.employee.id ne r.created_by.id}">
                                             <div style="display: flex; gap: 8px; align-items: center; margin-top: 4px;">
                                                 <span style="font-size: 0.85em; color: var(--muted);">Đổi sang:</span>
-                                                <c:if test="${r.status eq 1}">
+                                                <c:if test="${r.status eq 1 and hasPermission.check('/request/review')}">
                                                     <%-- Approved -> Change to Rejected (status=2) --%>
                                                     <a href="${pageContext.request.contextPath}/request/review?rid=${r.id}&status=2" class="btn btn-ghost" style="padding: 4px 10px; font-size: 12px;">Từ chối</a>
                                                 </c:if>
-                                                <c:if test="${r.status eq 2}">
+                                                <c:if test="${r.status eq 2 and hasPermission.check('/request/review')}">
                                                     <%-- Rejected -> Change to Approved (status=1) --%>
                                                     <a href="${pageContext.request.contextPath}/request/review?rid=${r.id}&status=1" class="btn" style="padding: 4px 10px; font-size: 12px;">Duyệt</a>
                                                 </c:if>
@@ -120,7 +120,7 @@
                                     </c:when>
                                     <c:otherwise>
                                         <%-- Nếu chưa xử lý, chỉ hiển thị nút nếu user hiện tại KHÔNG phải là người tạo đơn --%>
-                                        <c:if test="${sessionScope.auth.employee.id ne r.created_by.id}">
+                                        <c:if test="${sessionScope.auth.employee.id ne r.created_by.id and hasPermission.check('/request/review')}">
                                             <div style="display: flex; gap: 8px; align-items: center;">
                                                 <a href="${pageContext.request.contextPath}/request/review?rid=${r.id}&status=1" class="btn" style="padding: 6px 12px; font-size: 13px;">Duyệt</a>
                                                 <a href="${pageContext.request.contextPath}/request/review?rid=${r.id}&status=2" class="btn btn-ghost" style="padding: 6px 12px; font-size: 13px;">Từ chối</a>

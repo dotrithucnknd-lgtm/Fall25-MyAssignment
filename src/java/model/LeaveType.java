@@ -32,3 +32,5 @@ public class LeaveType extends BaseModel {
     
 }
 
+
+

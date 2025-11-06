@@ -1,6 +1,6 @@
 package controller.statistics;
 
-import controller.iam.BaseRequiredAuthenticationController;
+import controller.iam.BaseRequiredAuthorizationController;
 import dal.RequestForLeaveDBContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -12,13 +12,13 @@ import model.iam.User;
 
 /**
  * Controller để hiển thị trang thống kê số lần nghỉ của từng employee
- * Tất cả user đã đăng nhập đều có thể xem trang này
+ * Chỉ Manager và Admin mới có quyền xem trang này
  */
 @WebServlet(urlPatterns = "/statistics")
-public class StatisticsController extends BaseRequiredAuthenticationController {
+public class StatisticsController extends BaseRequiredAuthorizationController {
 
     @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp, User user) 
+    protected void processGet(HttpServletRequest req, HttpServletResponse resp, User user) 
             throws ServletException, IOException {
         RequestForLeaveDBContext db = new RequestForLeaveDBContext();
         ArrayList<RequestForLeaveDBContext.EmployeeLeaveStatistics> stats = 
@@ -29,9 +29,9 @@ public class StatisticsController extends BaseRequiredAuthenticationController {
     }
 
     @Override
-    protected void doPost(HttpServletRequest req, HttpServletResponse resp, User user) 
+    protected void processPost(HttpServletRequest req, HttpServletResponse resp, User user) 
             throws ServletException, IOException {
-        doGet(req, resp, user);
+        processGet(req, resp, user);
     }
 }
 
