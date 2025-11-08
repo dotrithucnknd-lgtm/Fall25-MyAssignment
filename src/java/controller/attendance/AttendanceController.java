@@ -2,6 +2,8 @@ package controller.attendance;
 
 import controller.iam.BaseRequiredAuthenticationController;
 import dal.AttendanceDBContext;
+import dal.AttendanceServiceDAO;
+import dal.AttendanceServiceDAO.AttendanceResult;
 import dal.RequestForLeaveDBContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -220,73 +222,50 @@ public class AttendanceController extends BaseRequiredAuthenticationController {
                 return;
             }
             
-            // Kiểm tra xem đã chấm công cho ngày này chưa
-            Attendance existingAttendance = attendanceDB.getByRequestIdAndDate(requestId, attendanceDate);
+            // Sử dụng AttendanceServiceDAO để check-in cho đơn nghỉ phép
+            AttendanceServiceDAO attendanceService = new AttendanceServiceDAO();
             
-            Attendance attendance;
-            boolean isNew = false;
+            Time checkInTime = null;
+            Time checkOutTime = null;
             
-            if (existingAttendance != null) {
-                // Cập nhật chấm công đã có
-                attendance = existingAttendance;
-                isNew = false;
-            } else {
-                // Tạo chấm công mới
-                attendance = new Attendance();
-                attendance.setEmployee(user.getEmployee());
-                attendance.setRequestForLeave(request);
-                attendance.setAttendanceDate(attendanceDate);
-                isNew = true;
-            }
-            
-            // Set thời gian check-in/check-out
             if (checkInTimeStr != null && !checkInTimeStr.trim().isEmpty()) {
-                attendance.setCheckInTime(Time.valueOf(checkInTimeStr + ":00"));
+                checkInTime = Time.valueOf(checkInTimeStr + ":00");
             }
             
             if (checkOutTimeStr != null && !checkOutTimeStr.trim().isEmpty()) {
-                attendance.setCheckOutTime(Time.valueOf(checkOutTimeStr + ":00"));
+                checkOutTime = Time.valueOf(checkOutTimeStr + ":00");
             }
             
-            if (note != null && !note.trim().isEmpty()) {
-                attendance.setNote(note.trim());
+            AttendanceResult result = attendanceService.checkInForLeaveRequest(
+                user.getEmployee().getId(),
+                requestId,
+                attendanceDate,
+                checkInTime,
+                checkOutTime,
+                note
+            );
+            
+            if (!result.isSuccess()) {
+                req.getSession().setAttribute("errorMessage", result.getErrorMessage());
+                resp.sendRedirect(req.getContextPath() + "/attendance/check/" + requestId);
+                return;
             }
             
-            // Lưu vào database
-            if (isNew) {
-                attendanceDB.insert(attendance);
-                
-                // Ghi log
-                LogUtil.logActivity(
-                    user,
-                    LogUtil.ActivityType.CHECK_IN_ATTENDANCE,
-                    LogUtil.EntityType.REQUEST_FOR_LEAVE,
-                    requestId,
-                    "Chấm công cho ngày nghỉ " + attendanceDate,
-                    null,
-                    String.format("{\"attendance_date\":\"%s\",\"check_in\":\"%s\",\"check_out\":\"%s\"}", 
-                        attendanceDate, checkInTimeStr, checkOutTimeStr),
-                    req
-                );
-            } else {
-                attendanceDB.update(attendance);
-                
-                // Ghi log
-                LogUtil.logActivity(
-                    user,
-                    LogUtil.ActivityType.UPDATE_ATTENDANCE,
-                    LogUtil.EntityType.REQUEST_FOR_LEAVE,
-                    requestId,
-                    "Cập nhật chấm công cho ngày nghỉ " + attendanceDate,
-                    null,
-                    String.format("{\"attendance_date\":\"%s\",\"check_in\":\"%s\",\"check_out\":\"%s\"}", 
-                        attendanceDate, checkInTimeStr, checkOutTimeStr),
-                    req
-                );
-            }
+            // Ghi log
+            LogUtil.logActivity(
+                user,
+                result.isIsNew() ? LogUtil.ActivityType.CHECK_IN_ATTENDANCE : LogUtil.ActivityType.UPDATE_ATTENDANCE,
+                LogUtil.EntityType.REQUEST_FOR_LEAVE,
+                requestId,
+                (result.isIsNew() ? "Chấm công" : "Cập nhật chấm công") + " cho ngày nghỉ " + attendanceDate,
+                null,
+                String.format("{\"attendance_date\":\"%s\",\"check_in\":\"%s\",\"check_out\":\"%s\"}", 
+                    attendanceDate, checkInTimeStr, checkOutTimeStr),
+                req
+            );
             
             req.getSession().setAttribute("successMessage", 
-                isNew ? "Chấm công thành công!" : "Cập nhật chấm công thành công!");
+                result.isIsNew() ? "Chấm công thành công!" : "Cập nhật chấm công thành công!");
             resp.sendRedirect(req.getContextPath() + "/attendance/check/" + requestId);
             
         } catch (NumberFormatException e) {
@@ -312,9 +291,9 @@ public class AttendanceController extends BaseRequiredAuthenticationController {
      */
     private void showDailyAttendance(HttpServletRequest req, HttpServletResponse resp, User user)
             throws ServletException, IOException {
-        // Lấy chấm công hôm nay (nếu có)
+        // Lấy chấm công hàng ngày hôm nay (chỉ lấy request_id IS NULL)
         java.sql.Date today = new java.sql.Date(System.currentTimeMillis());
-        Attendance todayAttendance = attendanceDB.getByEmployeeIdAndDate(
+        Attendance todayAttendance = attendanceDB.getDailyAttendanceByEmployeeIdAndDate(
             user.getEmployee().getId(), 
             today
         );
@@ -333,72 +312,64 @@ public class AttendanceController extends BaseRequiredAuthenticationController {
         java.sql.Date today = new java.sql.Date(System.currentTimeMillis());
         
         try {
-            // Lấy chấm công hôm nay (nếu có)
-            Attendance attendance = attendanceDB.getByEmployeeIdAndDate(
-                user.getEmployee().getId(), 
-                today
-            );
-            
-            boolean isNew = false;
-            if (attendance == null) {
-                // Tạo mới
-                attendance = new Attendance();
-                attendance.setEmployee(user.getEmployee());
-                attendance.setAttendanceDate(today);
-                attendance.setRequestForLeave(null); // Không liên kết với đơn nghỉ phép
-                isNew = true;
-            }
-            
-            java.sql.Time currentTime = new java.sql.Time(System.currentTimeMillis());
+            // Sử dụng AttendanceServiceDAO
+            AttendanceServiceDAO attendanceService = new AttendanceServiceDAO();
+            AttendanceResult result = null;
             
             if ("checkin".equals(action)) {
-                attendance.setCheckInTime(currentTime);
-                if (isNew) {
-                    attendanceDB.insert(attendance);
-                } else {
-                    attendanceDB.update(attendance);
-                }
-                
-                // Ghi log
-                LogUtil.logActivity(
-                    user,
-                    LogUtil.ActivityType.CHECK_IN_ATTENDANCE,
-                    null,
-                    null,
-                    "Check-in hàng ngày " + today,
-                    null,
-                    String.format("{\"date\":\"%s\",\"check_in\":\"%s\"}", today, currentTime),
-                    req
+                // Check-in hàng ngày
+                result = attendanceService.checkInDaily(
+                    user.getEmployee().getId(),
+                    today,
+                    null, // Dùng thời gian hiện tại
+                    null  // Không có note
                 );
                 
-                req.getSession().setAttribute("successMessage", "Check-in thành công!");
+                if (result.isSuccess()) {
+                    // Ghi log
+                    LogUtil.logActivity(
+                        user,
+                        LogUtil.ActivityType.CHECK_IN_ATTENDANCE,
+                        null,
+                        null,
+                        "Check-in hàng ngày " + today,
+                        null,
+                        String.format("{\"date\":\"%s\",\"check_in\":\"%s\"}", 
+                            today, result.getAttendance().getCheckInTime()),
+                        req
+                    );
+                    
+                    req.getSession().setAttribute("successMessage", "Check-in thành công!");
+                } else {
+                    req.getSession().setAttribute("errorMessage", result.getErrorMessage());
+                }
             } else if ("checkout".equals(action)) {
-                if (attendance.getCheckInTime() == null) {
-                    req.getSession().setAttribute("errorMessage", "Bạn phải check-in trước khi check-out.");
-                    resp.sendRedirect(req.getContextPath() + "/attendance/");
-                    return;
-                }
-                
-                attendance.setCheckOutTime(currentTime);
-                if (isNew) {
-                    attendanceDB.insert(attendance);
-                } else {
-                    attendanceDB.update(attendance);
-                }
-                
-                // Ghi log
-                LogUtil.logActivity(
-                    user,
-                    LogUtil.ActivityType.UPDATE_ATTENDANCE,
-                    null,
-                    null,
-                    "Check-out hàng ngày " + today,
-                    null,
-                    String.format("{\"date\":\"%s\",\"check_out\":\"%s\"}", today, currentTime),
-                    req
+                // Check-out hàng ngày
+                result = attendanceService.checkOutDaily(
+                    user.getEmployee().getId(),
+                    today,
+                    null, // Dùng thời gian hiện tại
+                    null  // Không có note
                 );
                 
-                req.getSession().setAttribute("successMessage", "Check-out thành công!");
+                if (result.isSuccess()) {
+                    // Ghi log
+                    LogUtil.logActivity(
+                        user,
+                        LogUtil.ActivityType.UPDATE_ATTENDANCE,
+                        null,
+                        null,
+                        "Check-out hàng ngày " + today,
+                        null,
+                        String.format("{\"date\":\"%s\",\"check_out\":\"%s\"}", 
+                            today, result.getAttendance().getCheckOutTime()),
+                        req
+                    );
+                    
+                    req.getSession().setAttribute("successMessage", "Check-out thành công!");
+                } else {
+                    req.getSession().setAttribute("errorMessage", result.getErrorMessage());
+                }
             } else {
                 req.getSession().setAttribute("errorMessage", "Hành động không hợp lệ.");
             }

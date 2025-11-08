@@ -14,6 +14,9 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.HashMap;
+import java.util.Map;
+import java.sql.Date;
 import model.RequestForLeave;
 import model.Employee;
 import model.iam.User;
@@ -70,20 +73,7 @@ public class ViewAgendaController extends BaseRequiredAuthorizationController {
             return;
         }
         
-        // Lấy danh sách đơn nghỉ phép của division (employee và subordinates) theo tháng
-        ArrayList<RequestForLeave> agenda = new ArrayList<>();
-        try {
-            agenda = db.getDivisionAgendaByMonth(
-                user.getEmployee().getId(), 
-                year, 
-                month
-            );
-        } catch (Exception e) {
-            e.printStackTrace();
-            // Nếu có lỗi, để danh sách rỗng
-        }
-        
-        // Lấy danh sách nhân viên trong division
+        // Lấy danh sách nhân viên trong division (cần lấy trước để dùng trong debug)
         ArrayList<Employee> employees = new ArrayList<>();
         try {
             EmployeeDBContext employeeDB = new EmployeeDBContext();
@@ -97,10 +87,76 @@ public class ViewAgendaController extends BaseRequiredAuthorizationController {
             employees = new ArrayList<>();
         }
         
+        // Lấy danh sách đơn nghỉ phép của division (employee và subordinates) theo tháng
+        ArrayList<RequestForLeave> agenda = new ArrayList<>();
+        try {
+            agenda = db.getDivisionAgendaByMonth(
+                user.getEmployee().getId(), 
+                year, 
+                month
+            );
+            // Debug: Log số lượng đơn nghỉ phép
+            System.out.println("DEBUG: Agenda loaded - Total requests: " + agenda.size());
+            System.out.println("DEBUG: Year: " + year + ", Month: " + month);
+            for (RequestForLeave r : agenda) {
+                System.out.println("DEBUG: Request #" + r.getId() + 
+                    " - Status: " + r.getStatus() + 
+                    " - Employee ID: " + (r.getCreated_by() != null ? r.getCreated_by().getId() : "null") +
+                    " - Employee Name: " + (r.getCreated_by() != null ? r.getCreated_by().getName() : "null") +
+                    " - From: " + r.getFrom() + " - To: " + r.getTo());
+            }
+            System.out.println("DEBUG: Total employees in division: " + employees.size());
+            for (Employee emp : employees) {
+                System.out.println("DEBUG: Employee ID: " + emp.getId() + ", Name: " + emp.getName());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            // Nếu có lỗi, để danh sách rỗng
+        }
+        
         // Tính toán số ngày trong tháng
         Calendar monthCal = Calendar.getInstance();
         monthCal.set(year, month - 1, 1);
         int daysInMonth = monthCal.getActualMaximum(Calendar.DAY_OF_MONTH);
+        
+        // Tạo Map để đánh dấu các ngày nghỉ: key = "employeeId_date", value = true
+        Map<String, Boolean> leaveDaysMap = new HashMap<>();
+        for (RequestForLeave r : agenda) {
+            if (r != null && r.getCreated_by() != null && r.getFrom() != null && r.getTo() != null) {
+                int employeeId = r.getCreated_by().getId();
+                Date fromDate = r.getFrom();
+                Date toDate = r.getTo();
+                
+                // Tạo Calendar để iterate qua tất cả các ngày trong khoảng [fromDate, toDate]
+                Calendar dateCal = Calendar.getInstance();
+                dateCal.setTime(fromDate);
+                
+                Calendar endCal = Calendar.getInstance();
+                endCal.setTime(toDate);
+                
+                // Thêm tất cả các ngày trong khoảng vào Map
+                while (!dateCal.after(endCal)) {
+                    int checkYear = dateCal.get(Calendar.YEAR);
+                    int checkMonth = dateCal.get(Calendar.MONTH) + 1;
+                    int checkDay = dateCal.get(Calendar.DAY_OF_MONTH);
+                    
+                    // Chỉ thêm nếu ngày này nằm trong tháng đang xem
+                    if (checkYear == year && checkMonth == month) {
+                        String key = employeeId + "_" + checkDay;
+                        leaveDaysMap.put(key, true);
+                    }
+                    
+                    // Tăng ngày lên 1
+                    dateCal.add(Calendar.DAY_OF_MONTH, 1);
+                }
+            }
+        }
+        
+        // Debug: Log Map
+        System.out.println("DEBUG: Leave days map size: " + leaveDaysMap.size());
+        for (Map.Entry<String, Boolean> entry : leaveDaysMap.entrySet()) {
+            System.out.println("DEBUG: Leave day key: " + entry.getKey() + " = " + entry.getValue());
+        }
         
         // Tính toán tháng trước và tháng sau để navigation
         Calendar prevCal = Calendar.getInstance();
@@ -123,6 +179,7 @@ public class ViewAgendaController extends BaseRequiredAuthorizationController {
         req.setAttribute("prevMonth", prevMonth);
         req.setAttribute("nextYear", nextYear);
         req.setAttribute("nextMonth", nextMonth);
+        req.setAttribute("leaveDaysMap", leaveDaysMap);
         
         // Forward to JSP
         req.getRequestDispatcher("/view/division/agenda.jsp").forward(req, resp);

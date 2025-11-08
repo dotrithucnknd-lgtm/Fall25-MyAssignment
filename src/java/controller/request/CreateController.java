@@ -11,6 +11,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.sql.Date;
+import java.util.Calendar;
 import model.RequestForLeave;
 import util.LogUtil;
 
@@ -51,9 +52,40 @@ public class CreateController extends BaseRequiredAuthorizationController {
         }
         rfl.setLeaveType(lt);
         
-        // Map Ngày tháng
-        rfl.setFrom(Date.valueOf(from));
-        rfl.setTo(Date.valueOf(to));
+        // Map Ngày tháng và validate
+        Date fromDate = Date.valueOf(from);
+        Date toDate = Date.valueOf(to);
+        
+        // Lấy ngày hôm nay (chỉ phần ngày, không tính giờ)
+        Calendar cal = Calendar.getInstance();
+        cal.set(Calendar.HOUR_OF_DAY, 0);
+        cal.set(Calendar.MINUTE, 0);
+        cal.set(Calendar.SECOND, 0);
+        cal.set(Calendar.MILLISECOND, 0);
+        Date today = new Date(cal.getTimeInMillis());
+        
+        // Kiểm tra ngày không được trong quá khứ
+        if (fromDate.before(today)) {
+            req.getSession().setAttribute("errorMessage", "Không thể xin nghỉ trong quá khứ! Vui lòng chọn ngày từ hôm nay trở đi.");
+            resp.sendRedirect(req.getContextPath() + "/request/create");
+            return;
+        }
+        
+        if (toDate.before(today)) {
+            req.getSession().setAttribute("errorMessage", "Không thể xin nghỉ trong quá khứ! Vui lòng chọn ngày từ hôm nay trở đi.");
+            resp.sendRedirect(req.getContextPath() + "/request/create");
+            return;
+        }
+        
+        // Kiểm tra ngày kết thúc phải >= ngày bắt đầu
+        if (toDate.before(fromDate)) {
+            req.getSession().setAttribute("errorMessage", "Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu!");
+            resp.sendRedirect(req.getContextPath() + "/request/create");
+            return;
+        }
+        
+        rfl.setFrom(fromDate);
+        rfl.setTo(toDate);
         rfl.setReason(reason);
         
         // Map người tạo đơn (Lấy từ User đã đăng nhập)

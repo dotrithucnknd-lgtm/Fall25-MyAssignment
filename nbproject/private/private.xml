@@ -5,7 +5,11 @@
         <group>
             <file>file:/H:/PRJ301/Fall25Assm/src/java/dal/DBContext.java</file>
             <file>file:/H:/PRJ301/Fall25Assm/src/java/dal/UserDBContext.java</file>
+            <file>file:/H:/PRJ301/Fall25Assm/web/view/home.jsp</file>
+            <file>file:/H:/PRJ301/Fall25Assm/web/index.jsp</file>
             <file>file:/H:/PRJ301/Fall25Assm/src/java/controller/division/ViewAgendaController.java</file>
+            <file>file:/H:/PRJ301/Fall25Assm/src/java/controller/iam/LoginController.java</file>
+            <file>file:/H:/PRJ301/Fall25Assm/web/view/division/agenda.jsp</file>
         </group>
     </open-files>
 </project-private>

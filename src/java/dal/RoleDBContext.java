@@ -92,9 +92,42 @@ public class RoleDBContext extends DBContext<Role> {
         return roles;
     }
 
+    /**
+     * Lấy danh sách tất cả các Role
+     */
+    public ArrayList<Role> getAllRoles() {
+        ArrayList<Role> roles = new ArrayList<>();
+        try {
+            if (connection == null || connection.isClosed()) {
+                Logger.getLogger(RoleDBContext.class.getName()).log(Level.SEVERE, 
+                    "Connection is null or closed in getAllRoles");
+                return roles;
+            }
+            
+            String sql = "SELECT rid, rname FROM [Role] ORDER BY rid ASC";
+            PreparedStatement stm = connection.prepareStatement(sql);
+            ResultSet rs = stm.executeQuery();
+            
+            while (rs.next()) {
+                Role role = new Role();
+                role.setId(rs.getInt("rid"));
+                role.setName(rs.getString("rname"));
+                roles.add(role);
+            }
+            
+            rs.close();
+            stm.close();
+        } catch (SQLException ex) {
+            Logger.getLogger(RoleDBContext.class.getName()).log(Level.SEVERE, null, ex);
+        } finally {
+            closeConnection();
+        }
+        return roles;
+    }
+    
     @Override
     public ArrayList<Role> list() {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        return getAllRoles();
     }
 
     @Override

@@ -211,6 +211,9 @@ public class UserDBContext extends DBContext<User> {
     }
 
     public boolean createOrActivateEnrollment(int uid, int eid) {
+        PreparedStatement stm = null;
+        PreparedStatement verifyStm = null;
+        ResultSet rs = null;
         try {
             if (connection == null) {
                 Logger.getLogger(UserDBContext.class.getName()).log(Level.SEVERE, "Database connection is null");
@@ -233,7 +236,7 @@ public class UserDBContext extends DBContext<User> {
                                 WHEN MATCHED THEN UPDATE SET target.eid = src.eid, target.active = 1
                                 WHEN NOT MATCHED THEN INSERT (uid, eid, active) VALUES (src.uid, src.eid, 1);
                            """;
-            PreparedStatement stm = connection.prepareStatement(sql);
+            stm = connection.prepareStatement(sql);
             stm.setInt(1, uid);
             stm.setInt(2, eid);
             int rowsAffected = stm.executeUpdate();
@@ -244,10 +247,10 @@ public class UserDBContext extends DBContext<User> {
             // Verify enrollment was created/updated correctly
             if (rowsAffected > 0) {
                 String verifySql = "SELECT 1 FROM Enrollment WHERE uid = ? AND eid = ? AND active = 1";
-                PreparedStatement verifyStm = connection.prepareStatement(verifySql);
+                verifyStm = connection.prepareStatement(verifySql);
                 verifyStm.setInt(1, uid);
                 verifyStm.setInt(2, eid);
-                ResultSet rs = verifyStm.executeQuery();
+                rs = verifyStm.executeQuery();
                 boolean exists = rs.next();
                 Logger.getLogger(UserDBContext.class.getName()).log(Level.INFO, 
                     "Enrollment verification for uid=" + uid + ", eid=" + eid + ": " + exists);
@@ -260,12 +263,91 @@ public class UserDBContext extends DBContext<User> {
         } catch (SQLException ex) {
             Logger.getLogger(UserDBContext.class.getName()).log(Level.SEVERE, 
                 "Error creating/activating enrollment for uid=" + uid + ", eid=" + eid + ": " + ex.getMessage(), ex);
+            ex.printStackTrace();
         } finally {
-            closeConnection();
+            // Đóng ResultSet và PreparedStatement trước
+            try {
+                if (rs != null) rs.close();
+            } catch (SQLException ex) {
+                Logger.getLogger(UserDBContext.class.getName()).log(Level.WARNING, "Error closing ResultSet", ex);
+            }
+            try {
+                if (verifyStm != null) verifyStm.close();
+            } catch (SQLException ex) {
+                Logger.getLogger(UserDBContext.class.getName()).log(Level.WARNING, "Error closing verify PreparedStatement", ex);
+            }
+            try {
+                if (stm != null) stm.close();
+            } catch (SQLException ex) {
+                Logger.getLogger(UserDBContext.class.getName()).log(Level.WARNING, "Error closing PreparedStatement", ex);
+            }
+            // KHÔNG đóng connection ở đây vì có thể còn dùng cho role assignment
+            // closeConnection();
         }
         return false;
     }
 
+    /**
+     * Gán Role cho User
+     */
+    public boolean assignRole(int uid, int rid) {
+        PreparedStatement stm = null;
+        try {
+            if (connection == null || connection.isClosed()) {
+                Logger.getLogger(UserDBContext.class.getName()).log(Level.SEVERE, 
+                    "Connection is null or closed in assignRole");
+                return false;
+            }
+            
+            // Kiểm tra xem UserRole đã tồn tại chưa
+            String checkSql = "SELECT COUNT(*) FROM UserRole WHERE uid = ? AND rid = ?";
+            PreparedStatement checkStm = connection.prepareStatement(checkSql);
+            checkStm.setInt(1, uid);
+            checkStm.setInt(2, rid);
+            ResultSet rs = checkStm.executeQuery();
+            
+            if (rs.next() && rs.getInt(1) > 0) {
+                // UserRole đã tồn tại
+                rs.close();
+                checkStm.close();
+                Logger.getLogger(UserDBContext.class.getName()).log(Level.INFO, 
+                    "UserRole already exists for uid=" + uid + ", rid=" + rid);
+                return true;
+            }
+            rs.close();
+            checkStm.close();
+            
+            // Insert UserRole mới
+            String sql = "INSERT INTO UserRole (uid, rid) VALUES (?, ?)";
+            stm = connection.prepareStatement(sql);
+            stm.setInt(1, uid);
+            stm.setInt(2, rid);
+            int rowsAffected = stm.executeUpdate();
+            
+            if (rowsAffected > 0) {
+                Logger.getLogger(UserDBContext.class.getName()).log(Level.INFO, 
+                    "Successfully assigned role " + rid + " to user " + uid);
+                return true;
+            } else {
+                Logger.getLogger(UserDBContext.class.getName()).log(Level.WARNING, 
+                    "Failed to assign role " + rid + " to user " + uid);
+                return false;
+            }
+        } catch (SQLException ex) {
+            Logger.getLogger(UserDBContext.class.getName()).log(Level.SEVERE, 
+                "Error assigning role to user", ex);
+            return false;
+        } finally {
+            try {
+                if (stm != null) stm.close();
+            } catch (SQLException ex) {
+                Logger.getLogger(UserDBContext.class.getName()).log(Level.WARNING, "Error closing PreparedStatement", ex);
+            }
+            // KHÔNG đóng connection ở đây vì có thể còn dùng cho các method khác
+            // closeConnection();
+        }
+    }
+    
     public void deleteById(int uid) {
         try {
             connection.setAutoCommit(false);
@@ -444,6 +526,8 @@ public class UserDBContext extends DBContext<User> {
     }
 
     public Integer insertAndReturnId(User model) {
+        PreparedStatement stm = null;
+        ResultSet rs = null;
         try {
             if (connection == null) {
                 Logger.getLogger(UserDBContext.class.getName()).log(Level.SEVERE, "Database connection is null");
@@ -470,74 +554,74 @@ public class UserDBContext extends DBContext<User> {
             
             // Sử dụng OUTPUT INSERTED.uid để lấy UID vừa tạo (cách này đáng tin cậy hơn với SQL Server)
             String sql = "INSERT INTO [User] (username, [password], displayname) OUTPUT INSERTED.uid VALUES (?,?,?)";
-            PreparedStatement stm = connection.prepareStatement(sql);
-            stm.setString(1, model.getUsername());
+            stm = connection.prepareStatement(sql);
+            stm.setString(1, model.getUsername().trim());
             stm.setString(2, model.getPassword());
-            stm.setString(3, model.getDisplayname());
+            stm.setString(3, model.getDisplayname().trim());
             
             Logger.getLogger(UserDBContext.class.getName()).log(Level.INFO, 
                 "Executing INSERT for user: " + model.getUsername());
             
-            ResultSet rs = stm.executeQuery();
+            rs = stm.executeQuery();
             
-            try {
-                if (rs != null && rs.next()) {
-                    int uid = rs.getInt(1);
+            if (rs != null && rs.next()) {
+                int uid = rs.getInt(1);
+                Logger.getLogger(UserDBContext.class.getName()).log(Level.INFO, 
+                    "Got UID from OUTPUT: " + uid);
+                
+                if (uid > 0) {
                     Logger.getLogger(UserDBContext.class.getName()).log(Level.INFO, 
-                        "Got UID from OUTPUT: " + uid);
-                    
-                    if (uid > 0) {
-                        Logger.getLogger(UserDBContext.class.getName()).log(Level.INFO, 
-                            "Successfully created user with UID: " + uid + ", username: " + model.getUsername());
-                        return uid;
-                    } else {
-                        Logger.getLogger(UserDBContext.class.getName()).log(Level.SEVERE, 
-                            "Got UID but it's <= 0 for user: " + model.getUsername());
-                    }
+                        "Successfully created user with UID: " + uid + ", username: " + model.getUsername());
+                    return uid;
                 } else {
                     Logger.getLogger(UserDBContext.class.getName()).log(Level.SEVERE, 
-                        "Failed to get UID from OUTPUT clause for user: " + model.getUsername() + 
-                        " - ResultSet is null or empty");
+                        "Got UID but it's <= 0 for user: " + model.getUsername());
                 }
-            } finally {
-                if (rs != null) {
-                    try {
-                        rs.close();
-                    } catch (SQLException ex) {
-                        Logger.getLogger(UserDBContext.class.getName()).log(Level.WARNING, 
-                            "Error closing ResultSet", ex);
-                    }
-                }
-                if (stm != null) {
-                    try {
-                        stm.close();
-                    } catch (SQLException ex) {
-                        Logger.getLogger(UserDBContext.class.getName()).log(Level.WARNING, 
-                            "Error closing PreparedStatement", ex);
-                    }
-                }
+            } else {
+                Logger.getLogger(UserDBContext.class.getName()).log(Level.SEVERE, 
+                    "Failed to get UID from OUTPUT clause for user: " + model.getUsername() + 
+                    " - ResultSet is null or empty");
             }
         } catch (SQLException ex) {
             Logger.getLogger(UserDBContext.class.getName()).log(Level.SEVERE, 
                 "Error inserting user: " + (model != null ? model.getUsername() : "null") + 
                 " - " + ex.getMessage(), ex);
+            ex.printStackTrace();
         } finally {
-            closeConnection();
+            // Đóng ResultSet và PreparedStatement trước
+            try {
+                if (rs != null) rs.close();
+            } catch (SQLException ex) {
+                Logger.getLogger(UserDBContext.class.getName()).log(Level.WARNING, "Error closing ResultSet", ex);
+            }
+            try {
+                if (stm != null) stm.close();
+            } catch (SQLException ex) {
+                Logger.getLogger(UserDBContext.class.getName()).log(Level.WARNING, "Error closing PreparedStatement", ex);
+            }
+            // KHÔNG đóng connection ở đây vì có thể còn dùng cho enrollment và role assignment
+            // closeConnection();
         }
         return null;
     }
 
     public boolean existsByUsername(String username) {
+        PreparedStatement stm = null;
+        ResultSet rs = null;
         try {
             if (connection == null) {
                 Logger.getLogger(UserDBContext.class.getName()).log(Level.SEVERE, "Database connection is null in existsByUsername");
                 return false;
             }
             
+            if (username == null || username.trim().isEmpty()) {
+                return false;
+            }
+            
             String sql = "SELECT 1 FROM [User] WHERE username = ?";
-            PreparedStatement stm = connection.prepareStatement(sql);
-            stm.setString(1, username);
-            ResultSet rs = stm.executeQuery();
+            stm = connection.prepareStatement(sql);
+            stm.setString(1, username.trim());
+            rs = stm.executeQuery();
             boolean exists = rs.next();
             Logger.getLogger(UserDBContext.class.getName()).log(Level.INFO, 
                 "Username '" + username + "' exists: " + exists);
@@ -545,7 +629,19 @@ public class UserDBContext extends DBContext<User> {
         } catch (SQLException ex) {
             Logger.getLogger(UserDBContext.class.getName()).log(Level.SEVERE, 
                 "Error checking username existence: " + username, ex);
+            ex.printStackTrace();
         } finally {
+            // Đóng ResultSet và PreparedStatement trước
+            try {
+                if (rs != null) rs.close();
+            } catch (SQLException ex) {
+                Logger.getLogger(UserDBContext.class.getName()).log(Level.WARNING, "Error closing ResultSet", ex);
+            }
+            try {
+                if (stm != null) stm.close();
+            } catch (SQLException ex) {
+                Logger.getLogger(UserDBContext.class.getName()).log(Level.WARNING, "Error closing PreparedStatement", ex);
+            }
             closeConnection();
         }
         return false;

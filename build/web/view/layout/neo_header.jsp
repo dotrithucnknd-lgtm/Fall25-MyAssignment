@@ -103,18 +103,29 @@
             <line x1="8" y1="2" x2="8" y2="6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             <line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
-          Lịch Division
+          Agenda
         </a>
       </c:if>
-      <c:if test="${hasPermission.check('/admin/create-user')}">
-        <a href="${ctx}/admin/create-user" class="<c:if test="${pageContext.request.requestURI.contains('/admin/create-user')}">active</c:if>">
+      <c:if test="${hasPermission.check('/division/attendance')}">
+        <a href="${ctx}/division/attendance" class="<c:if test="${pageContext.request.requestURI.contains('/division/attendance')}">active</c:if>">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-right: 8px;">
-            <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <circle cx="8.5" cy="7" r="4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <line x1="20" y1="8" x2="20" y2="14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <line x1="23" y1="11" x2="17" y2="11" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="16" y1="2" x2="16" y2="6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="8" y1="2" x2="8" y2="6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="12" cy="15" r="1" fill="currentColor"/>
           </svg>
-          Tạo User
+          Chấm công Division
+        </a>
+      </c:if>
+      <c:if test="${hasPermission.check('/admin/password-reset-requests')}">
+        <a href="${ctx}/admin/password-reset-requests" class="<c:if test="${pageContext.request.requestURI.contains('/admin/password-reset-requests')}">active</c:if>">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-right: 8px;">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="12" cy="16" r="1" fill="currentColor"/>
+          </svg>
+          Yêu cầu reset mật khẩu
         </a>
       </c:if>
       <c:if test="${hasPermission.check('/request/create')}">
@@ -161,9 +172,8 @@
             <c:when test="${pageContext.request.requestURI.contains('/home')}">Dashboard</c:when>
             <c:when test="${pageContext.request.requestURI.contains('/request')}">Quản lý đơn xin nghỉ</c:when>
             <c:when test="${pageContext.request.requestURI.contains('/attendance')}">Chấm công theo ngày nghỉ</c:when>
-            <c:when test="${pageContext.request.requestURI.contains('/admin/create-user')}">Tạo User Mới</c:when>
             <c:when test="${pageContext.request.requestURI.contains('/statistics')}">Thống kê nghỉ phép</c:when>
-            <c:when test="${pageContext.request.requestURI.contains('/division/agenda')}">Lịch Division</c:when>
+            <c:when test="${pageContext.request.requestURI.contains('/division/agenda')}">Agenda</c:when>
             <c:when test="${pageContext.request.requestURI.contains('/login')}">Đăng nhập</c:when>
             <c:otherwise>Neo Dashboard</c:otherwise>
           </c:choose>

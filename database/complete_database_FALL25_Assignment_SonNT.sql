@@ -47,12 +47,28 @@ GO
 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'User' AND schema_id = SCHEMA_ID('dbo'))
 BEGIN
     CREATE TABLE [dbo].[User](
-        [uid] [int] NOT NULL,
+        [uid] [int] IDENTITY(1,1) NOT NULL,
         [username] [varchar](150) NOT NULL,
         [password] [varchar](150) NOT NULL,
         [displayname] [varchar](150) NOT NULL,
      CONSTRAINT [PK_User] PRIMARY KEY CLUSTERED ([uid] ASC)
     ) ON [PRIMARY]
+END
+ELSE
+BEGIN
+    -- Nếu bảng đã tồn tại nhưng uid chưa có IDENTITY, thêm IDENTITY
+    -- Lưu ý: Không thể ALTER COLUMN để thêm IDENTITY trực tiếp, cần tạo bảng mới
+    -- Nếu bảng đã có dữ liệu, cần migrate dữ liệu
+    -- Ở đây chỉ kiểm tra và thông báo nếu cần
+    IF NOT EXISTS (
+        SELECT 1 FROM sys.columns 
+        WHERE object_id = OBJECT_ID('dbo.User') 
+        AND name = 'uid' 
+        AND is_identity = 1
+    )
+    BEGIN
+        PRINT 'WARNING: User.uid does not have IDENTITY. Please manually add IDENTITY or recreate table.'
+    END
 END
 GO
 
@@ -510,6 +526,12 @@ IF NOT EXISTS (SELECT * FROM [dbo].[Feature] WHERE [fid] = 10)
     INSERT [dbo].[Feature] ([fid], [url]) VALUES (10, N'/admin/delete-user')
 IF NOT EXISTS (SELECT * FROM [dbo].[Feature] WHERE [fid] = 11)
     INSERT [dbo].[Feature] ([fid], [url]) VALUES (11, N'/admin/reset-password')
+IF NOT EXISTS (SELECT * FROM [dbo].[Feature] WHERE [fid] = 12)
+    INSERT [dbo].[Feature] ([fid], [url]) VALUES (12, N'/forgot-password')
+IF NOT EXISTS (SELECT * FROM [dbo].[Feature] WHERE [fid] = 13)
+    INSERT [dbo].[Feature] ([fid], [url]) VALUES (13, N'/admin/password-reset-requests')
+IF NOT EXISTS (SELECT * FROM [dbo].[Feature] WHERE [fid] = 14)
+    INSERT [dbo].[Feature] ([fid], [url]) VALUES (14, N'/division/attendance')
 GO
 
 -- Insert RoleFeature
@@ -532,6 +554,8 @@ IF NOT EXISTS (SELECT * FROM [dbo].[RoleFeature] WHERE [rid] = 1 AND [fid] = 8)
     INSERT [dbo].[RoleFeature] ([rid], [fid]) VALUES (1, 8) -- /attendance
 IF NOT EXISTS (SELECT * FROM [dbo].[RoleFeature] WHERE [rid] = 1 AND [fid] = 9)
     INSERT [dbo].[RoleFeature] ([rid], [fid]) VALUES (1, 9) -- /admin/create-user
+IF NOT EXISTS (SELECT * FROM [dbo].[RoleFeature] WHERE [rid] = 1 AND [fid] = 14)
+    INSERT [dbo].[RoleFeature] ([rid], [fid]) VALUES (1, 14) -- /division/attendance
 
 -- IT PM (rid=2) - có quyền tạo, review, list, history, home
 IF NOT EXISTS (SELECT * FROM [dbo].[RoleFeature] WHERE [rid] = 2 AND [fid] = 1)
@@ -568,6 +592,8 @@ IF NOT EXISTS (SELECT * FROM [dbo].[RoleFeature] WHERE [rid] = 4 AND [fid] = 10)
     INSERT [dbo].[RoleFeature] ([rid], [fid]) VALUES (4, 10) -- /admin/delete-user
 IF NOT EXISTS (SELECT * FROM [dbo].[RoleFeature] WHERE [rid] = 4 AND [fid] = 11)
     INSERT [dbo].[RoleFeature] ([rid], [fid]) VALUES (4, 11) -- /admin/reset-password
+IF NOT EXISTS (SELECT * FROM [dbo].[RoleFeature] WHERE [rid] = 4 AND [fid] = 13)
+    INSERT [dbo].[RoleFeature] ([rid], [fid]) VALUES (4, 13) -- /admin/password-reset-requests
 GO
 
 -- Insert UserRole
@@ -626,6 +652,141 @@ IF NOT EXISTS (SELECT * FROM [dbo].[RequestForLeave] WHERE [rid] = 12)
 SET IDENTITY_INSERT [dbo].[RequestForLeave] OFF
 GO
 
+-- Bảng PasswordResetRequest (Yêu cầu reset mật khẩu)
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'PasswordResetRequest' AND schema_id = SCHEMA_ID('dbo'))
+BEGIN
+    CREATE TABLE [dbo].[PasswordResetRequest](
+        [prr_id] [int] IDENTITY(1,1) NOT NULL,
+        [user_id] [int] NOT NULL,
+        [username] [varchar](150) NOT NULL,
+        [request_time] [datetime] NOT NULL DEFAULT GETDATE(),
+        [status] [int] NOT NULL DEFAULT 0, -- 0=Pending, 1=Processed, 2=Cancelled
+        [processed_by] [int] NULL,
+        [processed_time] [datetime] NULL,
+        [note] [varchar](500) NULL,
+     CONSTRAINT [PK_PasswordResetRequest] PRIMARY KEY CLUSTERED ([prr_id] ASC)
+    ) ON [PRIMARY]
+END
+GO
+
+-- Foreign Key cho PasswordResetRequest
+IF NOT EXISTS (SELECT * FROM sys.foreign_keys WHERE name = 'FK_PasswordResetRequest_User')
+BEGIN
+    ALTER TABLE [dbo].[PasswordResetRequest] WITH CHECK 
+    ADD CONSTRAINT [FK_PasswordResetRequest_User] FOREIGN KEY([user_id]) REFERENCES [dbo].[User] ([uid])
+END
+GO
+
+IF NOT EXISTS (SELECT * FROM sys.foreign_keys WHERE name = 'FK_PasswordResetRequest_ProcessedBy')
+BEGIN
+    ALTER TABLE [dbo].[PasswordResetRequest] WITH CHECK 
+    ADD CONSTRAINT [FK_PasswordResetRequest_ProcessedBy] FOREIGN KEY([processed_by]) REFERENCES [dbo].[User] ([uid])
+END
+GO
+
+-- Index cho PasswordResetRequest (Optimized)
+IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_PasswordResetRequest_Status' AND object_id = OBJECT_ID('dbo.PasswordResetRequest'))
+BEGIN
+    CREATE INDEX [IX_PasswordResetRequest_Status] ON [dbo].[PasswordResetRequest]([status])
+END
+GO
+
+IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_PasswordResetRequest_RequestTime' AND object_id = OBJECT_ID('dbo.PasswordResetRequest'))
+BEGIN
+    CREATE INDEX [IX_PasswordResetRequest_RequestTime] ON [dbo].[PasswordResetRequest]([request_time] DESC)
+END
+GO
+
+-- Composite index để tối ưu query getPendingRequests (status = 0 ORDER BY request_time)
+IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_PasswordResetRequest_Status_RequestTime' AND object_id = OBJECT_ID('dbo.PasswordResetRequest'))
+BEGIN
+    CREATE INDEX [IX_PasswordResetRequest_Status_RequestTime] ON [dbo].[PasswordResetRequest]([status], [request_time] ASC)
+END
+GO
+
+-- Index cho user_id để tối ưu JOIN
+IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_PasswordResetRequest_UserId' AND object_id = OBJECT_ID('dbo.PasswordResetRequest'))
+BEGIN
+    CREATE INDEX [IX_PasswordResetRequest_UserId] ON [dbo].[PasswordResetRequest]([user_id])
+END
+GO
+
+-- ============================================
+-- PHẦN 5.5: SỬA BẢNG User NẾU CHƯA CÓ IDENTITY
+-- ============================================
+-- Kiểm tra và thêm IDENTITY cho uid nếu bảng đã tồn tại nhưng chưa có IDENTITY
+-- Lưu ý: Nếu bảng đã có dữ liệu, cần chạy script migrate_user_table_add_identity.sql
+IF EXISTS (SELECT * FROM sys.tables WHERE name = 'User' AND schema_id = SCHEMA_ID('dbo'))
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM sys.columns 
+        WHERE object_id = OBJECT_ID('dbo.User') 
+        AND name = 'uid' 
+        AND is_identity = 1
+    )
+    BEGIN
+        DECLARE @rowCount INT
+        SELECT @rowCount = COUNT(*) FROM [User]
+        
+        IF @rowCount = 0
+        BEGIN
+            -- Nếu bảng rỗng, drop và tạo lại với IDENTITY
+            PRINT 'Table User is empty. Recreating with IDENTITY...'
+            
+            -- Drop foreign keys first
+            IF EXISTS (SELECT * FROM sys.foreign_keys WHERE name = 'FK_Enrollment_User')
+                ALTER TABLE [dbo].[Enrollment] DROP CONSTRAINT [FK_Enrollment_User]
+            IF EXISTS (SELECT * FROM sys.foreign_keys WHERE name = 'FK_UserRole_User')
+                ALTER TABLE [dbo].[UserRole] DROP CONSTRAINT [FK_UserRole_User]
+            IF EXISTS (SELECT * FROM sys.foreign_keys WHERE name = 'FK_ActivityLog_User')
+                ALTER TABLE [dbo].[ActivityLog] DROP CONSTRAINT [FK_ActivityLog_User]
+            IF EXISTS (SELECT * FROM sys.foreign_keys WHERE name = 'FK_PasswordResetRequest_User')
+                ALTER TABLE [dbo].[PasswordResetRequest] DROP CONSTRAINT [FK_PasswordResetRequest_User]
+            IF EXISTS (SELECT * FROM sys.foreign_keys WHERE name = 'FK_PasswordResetRequest_ProcessedBy')
+                ALTER TABLE [dbo].[PasswordResetRequest] DROP CONSTRAINT [FK_PasswordResetRequest_ProcessedBy]
+            
+            DROP TABLE [dbo].[User]
+            
+            CREATE TABLE [dbo].[User](
+                [uid] [int] IDENTITY(1,1) NOT NULL,
+                [username] [varchar](150) NOT NULL,
+                [password] [varchar](150) NOT NULL,
+                [displayname] [varchar](150) NOT NULL,
+             CONSTRAINT [PK_User] PRIMARY KEY CLUSTERED ([uid] ASC)
+            ) ON [PRIMARY]
+            
+            -- Recreate foreign keys
+            ALTER TABLE [dbo].[Enrollment] WITH CHECK 
+            ADD CONSTRAINT [FK_Enrollment_User] FOREIGN KEY([uid]) REFERENCES [dbo].[User] ([uid])
+            
+            ALTER TABLE [dbo].[UserRole] WITH CHECK 
+            ADD CONSTRAINT [FK_UserRole_User] FOREIGN KEY([uid]) REFERENCES [dbo].[User] ([uid])
+            
+            ALTER TABLE [dbo].[ActivityLog] WITH CHECK 
+            ADD CONSTRAINT [FK_ActivityLog_User] FOREIGN KEY([user_id]) REFERENCES [dbo].[User] ([uid])
+            
+            ALTER TABLE [dbo].[PasswordResetRequest] WITH CHECK 
+            ADD CONSTRAINT [FK_PasswordResetRequest_User] FOREIGN KEY([user_id]) REFERENCES [dbo].[User] ([uid])
+            
+            ALTER TABLE [dbo].[PasswordResetRequest] WITH CHECK 
+            ADD CONSTRAINT [FK_PasswordResetRequest_ProcessedBy] FOREIGN KEY([processed_by]) REFERENCES [dbo].[User] ([uid])
+            
+            PRINT 'Table User recreated with IDENTITY successfully.'
+        END
+        ELSE
+        BEGIN
+            PRINT 'WARNING: Table User has ' + CAST(@rowCount AS VARCHAR) + ' rows. Cannot auto-migrate.'
+            PRINT 'Vui lòng chạy script: database/migrate_user_table_add_identity.sql để migrate dữ liệu.'
+            PRINT 'Script này sẽ:'
+            PRINT '  1. Backup dữ liệu User'
+            PRINT '  2. Drop và recreate bảng User với IDENTITY'
+            PRINT '  3. Restore dữ liệu (giữ nguyên uid)'
+            PRINT '  4. Recreate foreign key constraints'
+        END
+    END
+END
+GO
+
 -- ============================================
 -- PHẦN 6: CẤP QUYỀN CHO USER java_admin
 -- ============================================
@@ -655,6 +816,7 @@ PRINT '  - RequestForLeave'
 PRINT '  - ActivityLog (ghi log hoạt động)'
 PRINT '  - Attendance (quản lý chấm công)'
 PRINT '  - RequestForLeaveHistory (lịch sử thay đổi)'
+PRINT '  - PasswordResetRequest (yêu cầu reset mật khẩu)'
 PRINT ''
 PRINT 'Các View đã được tạo:'
 PRINT '  - vw_ActivityLog'
@@ -671,6 +833,8 @@ PRINT '  - /request/create, /request/review, /request/list, /request/history'
 PRINT '  - /division/agenda'
 PRINT '  - /home, /statistics, /attendance'
 PRINT '  - /admin/create-user, /admin/delete-user, /admin/reset-password'
+PRINT '  - /forgot-password (yêu cầu reset mật khẩu)'
+PRINT '  - /admin/password-reset-requests (quản lý yêu cầu reset mật khẩu)'
 PRINT ''
 PRINT 'User Admin đã được tạo:'
 PRINT '  - Username: admin'

@@ -257,13 +257,22 @@ public class AttendanceDBContext extends DBContext<Attendance> {
     @Override
     public void insert(Attendance model) {
         // Note: Method signature cannot be changed due to interface, so we handle SQLException internally
+        PreparedStatement stm = null;
+        ResultSet rs = null;
         try {
+            // Kiểm tra connection
+            if (connection == null || connection.isClosed()) {
+                Logger.getLogger(AttendanceDBContext.class.getName()).log(Level.SEVERE, 
+                    "Connection is null or closed in insert()");
+                return;
+            }
+            
             String sql = """
                 INSERT INTO Attendance 
                     (employee_id, request_id, attendance_date, check_in_time, check_out_time, note, created_at)
                 VALUES (?, ?, ?, ?, ?, ?, GETDATE())
                 """;
-            PreparedStatement stm = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+            stm = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
             stm.setInt(1, model.getEmployee().getId());
             
             if (model.getRequestForLeave() != null) {
@@ -296,8 +305,8 @@ public class AttendanceDBContext extends DBContext<Attendance> {
             
             if (rowsAffected > 0) {
                 // Lấy generated ID
-                ResultSet rs = stm.getGeneratedKeys();
-                if (rs.next()) {
+                rs = stm.getGeneratedKeys();
+                if (rs != null && rs.next()) {
                     model.setId(rs.getInt(1));
                     Logger.getLogger(AttendanceDBContext.class.getName()).log(Level.INFO, 
                         "Successfully inserted attendance with ID: " + model.getId());
@@ -309,21 +318,41 @@ public class AttendanceDBContext extends DBContext<Attendance> {
         } catch (SQLException ex) {
             Logger.getLogger(AttendanceDBContext.class.getName()).log(Level.SEVERE, 
                 "Error inserting attendance: " + ex.getMessage(), ex);
+            ex.printStackTrace();
             // Cannot throw SQLException due to interface constraint, but log it
         } finally {
+            // Đóng ResultSet và PreparedStatement
+            try {
+                if (rs != null) rs.close();
+            } catch (SQLException ex) {
+                Logger.getLogger(AttendanceDBContext.class.getName()).log(Level.WARNING, "Error closing ResultSet", ex);
+            }
+            try {
+                if (stm != null) stm.close();
+            } catch (SQLException ex) {
+                Logger.getLogger(AttendanceDBContext.class.getName()).log(Level.WARNING, "Error closing PreparedStatement", ex);
+            }
             closeConnection();
         }
     }
     
     @Override
     public void update(Attendance model) {
+        PreparedStatement stm = null;
         try {
+            // Kiểm tra connection
+            if (connection == null || connection.isClosed()) {
+                Logger.getLogger(AttendanceDBContext.class.getName()).log(Level.SEVERE, 
+                    "Connection is null or closed in update()");
+                return;
+            }
+            
             String sql = """
                 UPDATE Attendance 
                 SET check_in_time = ?, check_out_time = ?, note = ?
                 WHERE attendance_id = ?
                 """;
-            PreparedStatement stm = connection.prepareStatement(sql);
+            stm = connection.prepareStatement(sql);
             
             if (model.getCheckInTime() != null) {
                 stm.setTime(1, model.getCheckInTime());
@@ -356,8 +385,15 @@ public class AttendanceDBContext extends DBContext<Attendance> {
         } catch (SQLException ex) {
             Logger.getLogger(AttendanceDBContext.class.getName()).log(Level.SEVERE, 
                 "Error updating attendance: " + ex.getMessage(), ex);
+            ex.printStackTrace();
             // Cannot throw SQLException due to interface constraint, but log it
         } finally {
+            // Đóng PreparedStatement
+            try {
+                if (stm != null) stm.close();
+            } catch (SQLException ex) {
+                Logger.getLogger(AttendanceDBContext.class.getName()).log(Level.WARNING, "Error closing PreparedStatement", ex);
+            }
             closeConnection();
         }
     }
@@ -431,6 +467,7 @@ public class AttendanceDBContext extends DBContext<Attendance> {
     
     /**
      * Lấy chấm công của một employee cho một ngày cụ thể (không cần request_id)
+     * Ưu tiên lấy chấm công hàng ngày (request_id IS NULL), nếu không có thì lấy chấm công cho đơn nghỉ phép
      */
     public Attendance getByEmployeeIdAndDate(int employeeId, Date attendanceDate) {
         try {
@@ -454,7 +491,9 @@ public class AttendanceDBContext extends DBContext<Attendance> {
                 INNER JOIN Employee e ON a.employee_id = e.eid
                 LEFT JOIN RequestForLeave r ON a.request_id = r.rid
                 WHERE a.employee_id = ? AND a.attendance_date = ?
-                ORDER BY a.created_at DESC
+                ORDER BY 
+                    CASE WHEN a.request_id IS NULL THEN 0 ELSE 1 END ASC,
+                    a.created_at DESC
                 """;
             PreparedStatement stm = connection.prepareStatement(sql);
             stm.setInt(1, employeeId);
@@ -467,6 +506,73 @@ public class AttendanceDBContext extends DBContext<Attendance> {
         } catch (SQLException ex) {
             Logger.getLogger(AttendanceDBContext.class.getName()).log(Level.SEVERE, null, ex);
         } finally {
+            closeConnection();
+        }
+        return null;
+    }
+    
+    /**
+     * Lấy chấm công hàng ngày của một employee cho một ngày cụ thể (chỉ lấy request_id IS NULL)
+     */
+    public Attendance getDailyAttendanceByEmployeeIdAndDate(int employeeId, Date attendanceDate) {
+        PreparedStatement stm = null;
+        ResultSet rs = null;
+        try {
+            // Kiểm tra connection
+            if (connection == null || connection.isClosed()) {
+                Logger.getLogger(AttendanceDBContext.class.getName()).log(Level.SEVERE, 
+                    "Connection is null or closed in getDailyAttendanceByEmployeeIdAndDate()");
+                return null;
+            }
+            
+            String sql = """
+                SELECT 
+                    a.attendance_id,
+                    a.employee_id,
+                    a.request_id,
+                    a.attendance_date,
+                    a.check_in_time,
+                    a.check_out_time,
+                    a.note,
+                    a.created_at,
+                    e.eid,
+                    e.ename,
+                    r.rid,
+                    r.[from] as rfrom,
+                    r.[to] as rto,
+                    r.reason
+                FROM Attendance a
+                INNER JOIN Employee e ON a.employee_id = e.eid
+                LEFT JOIN RequestForLeave r ON a.request_id = r.rid
+                WHERE a.employee_id = ? 
+                  AND a.attendance_date = ?
+                  AND a.request_id IS NULL
+                ORDER BY a.created_at DESC
+                """;
+            stm = connection.prepareStatement(sql);
+            stm.setInt(1, employeeId);
+            stm.setDate(2, attendanceDate);
+            rs = stm.executeQuery();
+            
+            if (rs.next()) {
+                return mapResultSetToAttendance(rs);
+            }
+        } catch (SQLException ex) {
+            Logger.getLogger(AttendanceDBContext.class.getName()).log(Level.SEVERE, 
+                "Error in getDailyAttendanceByEmployeeIdAndDate: " + ex.getMessage(), ex);
+            ex.printStackTrace();
+        } finally {
+            // Đóng ResultSet và PreparedStatement
+            try {
+                if (rs != null) rs.close();
+            } catch (SQLException ex) {
+                Logger.getLogger(AttendanceDBContext.class.getName()).log(Level.WARNING, "Error closing ResultSet", ex);
+            }
+            try {
+                if (stm != null) stm.close();
+            } catch (SQLException ex) {
+                Logger.getLogger(AttendanceDBContext.class.getName()).log(Level.WARNING, "Error closing PreparedStatement", ex);
+            }
             closeConnection();
         }
         return null;
@@ -502,6 +608,74 @@ public class AttendanceDBContext extends DBContext<Attendance> {
                 """;
             PreparedStatement stm = connection.prepareStatement(sql);
             stm.setInt(1, employeeId);
+            ResultSet rs = stm.executeQuery();
+            
+            while (rs.next()) {
+                Attendance att = mapResultSetToAttendance(rs);
+                attendances.add(att);
+            }
+        } catch (SQLException ex) {
+            Logger.getLogger(AttendanceDBContext.class.getName()).log(Level.SEVERE, null, ex);
+        } finally {
+            closeConnection();
+        }
+        return attendances;
+    }
+    
+    /**
+     * Lấy danh sách chấm công của division (employee và tất cả subordinates) theo ngày
+     * @param supervisorEid ID của supervisor (IT Head)
+     * @param attendanceDate Ngày cần xem chấm công (null để xem tất cả)
+     * @return Danh sách chấm công của division
+     */
+    public ArrayList<Attendance> getDivisionAttendanceByDate(int supervisorEid, Date attendanceDate) {
+        ArrayList<Attendance> attendances = new ArrayList<>();
+        try {
+            String sql = """
+                WITH Org AS (
+                    -- get current employee - eid = @supervisorEid
+                    SELECT *, 0 as lvl FROM Employee e WHERE e.eid = ?
+                    
+                    UNION ALL
+                    -- expand to other subordinates
+                    SELECT c.*,o.lvl + 1 as lvl FROM Employee c JOIN Org o ON c.supervisorid = o.eid
+                )
+                SELECT 
+                    a.attendance_id,
+                    a.employee_id,
+                    a.request_id,
+                    a.attendance_date,
+                    a.check_in_time,
+                    a.check_out_time,
+                    a.note,
+                    a.created_at,
+                    e.eid,
+                    e.ename,
+                    r.rid,
+                    r.[from] as rfrom,
+                    r.[to] as rto,
+                    r.reason
+                FROM Org o
+                INNER JOIN Attendance a ON o.eid = a.employee_id
+                INNER JOIN Employee e ON a.employee_id = e.eid
+                LEFT JOIN RequestForLeave r ON a.request_id = r.rid
+                WHERE 1=1
+            """;
+            
+            // Thêm điều kiện ngày nếu có
+            if (attendanceDate != null) {
+                sql += " AND a.attendance_date = ?";
+            }
+            
+            sql += " ORDER BY a.attendance_date DESC, e.ename ASC, a.created_at DESC";
+            
+            PreparedStatement stm = connection.prepareStatement(sql);
+            stm.setInt(1, supervisorEid);
+            
+            if (attendanceDate != null) {
+                stm.setDate(2, attendanceDate);
+            }
+            
             ResultSet rs = stm.executeQuery();
             
             while (rs.next()) {

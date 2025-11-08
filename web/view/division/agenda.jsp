@@ -31,8 +31,7 @@
 <div class="container">
     <div class="hero mb-16">
         <div>
-            <h1 style="margin-top:0;">Lịch Nghỉ Phép Division</h1>
-            <p>Xem lịch nghỉ phép của division (bạn và các nhân viên dưới quyền).</p>
+            <h1 style="margin-top:0;">Agenda</h1>
             <div style="margin-top: 16px;">
                 <a href="${pageContext.request.contextPath}/home" class="neo-btn ghost" style="padding: 8px 16px; font-size: 14px;">
                     ← Về trang chủ
@@ -117,10 +116,10 @@
                         border-radius: 4px;
                     }
                     .agenda-cell.working {
-                        background: #4CAF50;
+                        background: #4CAF50 !important;
                     }
                     .agenda-cell.on-leave {
-                        background: #f44336;
+                        background: #f44336 !important;
                     }
                 </style>
                 
@@ -129,8 +128,23 @@
                     <span style="display: inline-block; width: 20px; height: 20px; background: #4CAF50; border-radius: 4px; vertical-align: middle; margin-right: 8px;"></span>
                     Có đi làm
                     <span style="display: inline-block; width: 20px; height: 20px; background: #f44336; border-radius: 4px; vertical-align: middle; margin-left: 16px; margin-right: 8px;"></span>
-                    Nghỉ phép
+                    Nghỉ phép (chỉ hiển thị đơn đã được duyệt)
                 </p>
+                
+                <%-- Thông tin đơn nghỉ phép --%>
+                <c:if test="${not empty requestScope.agenda}">
+                    <div style="margin-bottom: 16px; padding: 12px; background: var(--bg-secondary); border-radius: 8px; font-size: 12px; color: var(--muted);">
+                        <strong>Thông tin:</strong> Tổng số đơn đã duyệt: ${fn:length(requestScope.agenda)} | 
+                        Tháng: ${month}/${year} | 
+                        Số nhân viên: ${fn:length(requestScope.employees)}
+                        <br/>
+                        <c:forEach items="${requestScope.agenda}" var="r" varStatus="status">
+                            <c:if test="${status.index < 5}">
+                                Đơn #${r.id}: ${r.created_by.name} (${r.from} - ${r.to}) | 
+                            </c:if>
+                        </c:forEach>
+                    </div>
+                </c:if>
                 
                 <div style="overflow-x: auto;">
                     <table class="agenda-table">
@@ -147,66 +161,10 @@
                                 <tr>
                                     <td>${emp.name}</td>
                                     <c:forEach var="day" begin="1" end="${daysInMonth}">
-                                        <c:set var="currentDay" value="${day}" />
-                                        <%
-                                            try {
-                                                // Kiểm tra xem nhân viên có nghỉ phép trong ngày này không
-                                                model.Employee employee = (model.Employee) pageContext.getAttribute("emp");
-                                                Integer currentDay = (Integer) pageContext.getAttribute("currentDay");
-                                                Integer currentYear = (Integer) pageContext.getAttribute("year");
-                                                Integer currentMonth = (Integer) pageContext.getAttribute("month");
-                                                
-                                                if (employee != null && currentDay != null && currentYear != null && currentMonth != null) {
-                                                    java.util.Calendar dayCal = java.util.Calendar.getInstance();
-                                                    dayCal.set(currentYear, currentMonth - 1, currentDay);
-                                                    dayCal.set(java.util.Calendar.HOUR_OF_DAY, 0);
-                                                    dayCal.set(java.util.Calendar.MINUTE, 0);
-                                                    dayCal.set(java.util.Calendar.SECOND, 0);
-                                                    dayCal.set(java.util.Calendar.MILLISECOND, 0);
-                                                    
-                                                    boolean isOnLeave = false;
-                                                    java.util.List<model.RequestForLeave> agendaList = 
-                                                        (java.util.List<model.RequestForLeave>) pageContext.getAttribute("agenda");
-                                                    
-                                                    if (agendaList != null) {
-                                                        for (model.RequestForLeave r : agendaList) {
-                                                            // Chỉ hiển thị đơn đã được duyệt (status = 1)
-                                                            if (r != null && r.getStatus() == 1 && r.getCreated_by() != null && 
-                                                                r.getCreated_by().getId() == employee.getId()) {
-                                                                java.util.Calendar fromCal = java.util.Calendar.getInstance();
-                                                                fromCal.setTime(r.getFrom());
-                                                                fromCal.set(java.util.Calendar.HOUR_OF_DAY, 0);
-                                                                fromCal.set(java.util.Calendar.MINUTE, 0);
-                                                                fromCal.set(java.util.Calendar.SECOND, 0);
-                                                                fromCal.set(java.util.Calendar.MILLISECOND, 0);
-                                                                
-                                                                java.util.Calendar toCal = java.util.Calendar.getInstance();
-                                                                toCal.setTime(r.getTo());
-                                                                toCal.set(java.util.Calendar.HOUR_OF_DAY, 23);
-                                                                toCal.set(java.util.Calendar.MINUTE, 59);
-                                                                toCal.set(java.util.Calendar.SECOND, 59);
-                                                                toCal.set(java.util.Calendar.MILLISECOND, 999);
-                                                                
-                                                                // Kiểm tra xem ngày hiện tại có nằm trong khoảng từ r.from đến r.to không
-                                                                if (dayCal.getTimeInMillis() >= fromCal.getTimeInMillis() && 
-                                                                    dayCal.getTimeInMillis() <= toCal.getTimeInMillis()) {
-                                                                    isOnLeave = true;
-                                                                    break;
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                                    
-                                                    pageContext.setAttribute("isOnLeave", isOnLeave);
-                                                } else {
-                                                    pageContext.setAttribute("isOnLeave", false);
-                                                }
-                                            } catch (Exception e) {
-                                                pageContext.setAttribute("isOnLeave", false);
-                                            }
-                                        %>
+                                        <c:set var="dayKey" value="${emp.id}_${day}" />
+                                        <c:set var="isOnLeave" value="${leaveDaysMap[dayKey]}" />
                                         <td>
-                                            <div class="agenda-cell ${isOnLeave ? 'on-leave' : 'working'}"></div>
+                                            <div class="agenda-cell <c:choose><c:when test="${isOnLeave}">on-leave</c:when><c:otherwise>working</c:otherwise></c:choose>"></div>
                                         </td>
                                     </c:forEach>
                                 </tr>

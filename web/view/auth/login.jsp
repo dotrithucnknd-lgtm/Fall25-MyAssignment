@@ -39,7 +39,7 @@
                     </div>
                 </form>
                 <p class="muted" style="margin-top: 16px;">
-                    <a href="#" style="color: var(--primary); text-decoration: none;">Quên mật khẩu?</a>
+                    <a href="${pageContext.request.contextPath}/forgot-password" style="color: var(--primary); text-decoration: none;">Quên mật khẩu?</a>
                 </p>
             </div>
         </div>

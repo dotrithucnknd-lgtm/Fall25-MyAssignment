@@ -309,8 +309,14 @@ public class RequestForLeaveDBContext extends DBContext<RequestForLeave> {
                 FROM [RequestForLeave]
                 WHERE [created_by] = ?
                   AND [status] = 1
-                  AND YEAR([from]) = YEAR(GETDATE())
-                  AND MONTH([from]) = MONTH(GETDATE())
+                  AND (
+                      -- Đơn nghỉ phép có ngày nghỉ nằm trong tháng (bắt đầu trong tháng hoặc kết thúc trong tháng)
+                      (YEAR([from]) = YEAR(GETDATE()) AND MONTH([from]) = MONTH(GETDATE())) OR
+                      (YEAR([to]) = YEAR(GETDATE()) AND MONTH([to]) = MONTH(GETDATE())) OR
+                      -- Đơn nghỉ phép kéo dài qua tháng (bắt đầu trước tháng và kết thúc sau tháng)
+                      ([from] < DATEFROMPARTS(YEAR(GETDATE()), MONTH(GETDATE()), 1) AND 
+                       [to] >= EOMONTH(DATEFROMPARTS(YEAR(GETDATE()), MONTH(GETDATE()), 1)))
+                  )
             """;
             PreparedStatement stm = connection.prepareStatement(sql);
             stm.setInt(1, eid);
@@ -360,8 +366,14 @@ public class RequestForLeaveDBContext extends DBContext<RequestForLeave> {
                 LEFT JOIN [RequestForLeave] r 
                     ON r.[created_by] = e.eid 
                     AND r.[status] = 1
-                    AND YEAR(r.[from]) = YEAR(GETDATE())
-                    AND MONTH(r.[from]) = MONTH(GETDATE())
+                    AND (
+                        -- Đơn nghỉ phép có ngày nghỉ nằm trong tháng (bắt đầu trong tháng hoặc kết thúc trong tháng)
+                        (YEAR(r.[from]) = YEAR(GETDATE()) AND MONTH(r.[from]) = MONTH(GETDATE())) OR
+                        (YEAR(r.[to]) = YEAR(GETDATE()) AND MONTH(r.[to]) = MONTH(GETDATE())) OR
+                        -- Đơn nghỉ phép kéo dài qua tháng (bắt đầu trước tháng và kết thúc sau tháng)
+                        (r.[from] < DATEFROMPARTS(YEAR(GETDATE()), MONTH(GETDATE()), 1) AND 
+                         r.[to] >= EOMONTH(DATEFROMPARTS(YEAR(GETDATE()), MONTH(GETDATE()), 1)))
+                    )
                 GROUP BY e.eid, e.ename
                 ORDER BY leave_count DESC, e.ename ASC
             """;
@@ -415,13 +427,26 @@ public class RequestForLeaveDBContext extends DBContext<RequestForLeave> {
                 FROM Org e 
                 INNER JOIN [RequestForLeave] r ON e.eid = r.created_by
                 LEFT JOIN Employee p ON p.eid = r.processed_by
-                WHERE YEAR(r.[from]) = ? AND MONTH(r.[from]) = ?
+                WHERE r.[status] = 1  -- CHỈ LẤY ĐƠN ĐÃ DUYỆT (status = 1)
+                  AND (
+                    -- Đơn nghỉ phép có ngày nghỉ nằm trong tháng (bắt đầu trong tháng hoặc kết thúc trong tháng)
+                    (YEAR(r.[from]) = ? AND MONTH(r.[from]) = ?) OR
+                    (YEAR(r.[to]) = ? AND MONTH(r.[to]) = ?) OR
+                    -- Đơn nghỉ phép kéo dài qua tháng (bắt đầu trước tháng và kết thúc sau tháng)
+                    (r.[from] < DATEFROMPARTS(?, ?, 1) AND r.[to] >= EOMONTH(DATEFROMPARTS(?, ?, 1)))
+                  )
                 ORDER BY r.[from] ASC, e.ename ASC
             """;
             PreparedStatement stm = connection.prepareStatement(sql);
             stm.setInt(1, eid);
             stm.setInt(2, year);
             stm.setInt(3, month);
+            stm.setInt(4, year);
+            stm.setInt(5, month);
+            stm.setInt(6, year);
+            stm.setInt(7, month);
+            stm.setInt(8, year);
+            stm.setInt(9, month);
             ResultSet rs = stm.executeQuery();
             
             while (rs.next()) {

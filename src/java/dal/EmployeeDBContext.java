@@ -5,10 +5,13 @@ import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import model.Employee;
+import model.Department;
 
 public class EmployeeDBContext extends DBContext<Employee> {
 
     public int insertAndReturnId(Employee e) {
+        PreparedStatement stm = null;
+        ResultSet rs = null;
         try {
             if (connection == null) {
                 Logger.getLogger(EmployeeDBContext.class.getName()).log(Level.SEVERE, "Database connection is null");
@@ -30,14 +33,29 @@ public class EmployeeDBContext extends DBContext<Employee> {
             }
             
             // Sử dụng OUTPUT INSERTED để lấy EID vừa tạo (cách này đáng tin cậy hơn với SQL Server)
-            String sql = "INSERT INTO Employee(ename) OUTPUT INSERTED.eid VALUES (?)";
-            PreparedStatement stm = connection.prepareStatement(sql);
-            stm.setString(1, e.getName());
+            // Kiểm tra xem có Division và Supervisor không
+            if (e.getDept() != null && e.getDept().getId() > 0) {
+                // Có Division, có thể có Supervisor
+                String sql = "INSERT INTO Employee(ename, did, supervisorid) OUTPUT INSERTED.eid VALUES (?, ?, ?)";
+                stm = connection.prepareStatement(sql);
+                stm.setString(1, e.getName().trim());
+                stm.setInt(2, e.getDept().getId());
+                if (e.getSupervisor() != null && e.getSupervisor().getId() > 0) {
+                    stm.setInt(3, e.getSupervisor().getId());
+                } else {
+                    stm.setNull(3, Types.INTEGER);
+                }
+            } else {
+                // Không có Division, chỉ insert tên
+                String sql = "INSERT INTO Employee(ename) OUTPUT INSERTED.eid VALUES (?)";
+                stm = connection.prepareStatement(sql);
+                stm.setString(1, e.getName().trim());
+            }
             
             Logger.getLogger(EmployeeDBContext.class.getName()).log(Level.INFO, 
                 "Executing INSERT for employee: " + e.getName());
             
-            ResultSet rs = stm.executeQuery();
+            rs = stm.executeQuery();
             
             if (rs != null && rs.next()) {
                 int eid = rs.getInt(1);
@@ -58,9 +76,23 @@ public class EmployeeDBContext extends DBContext<Employee> {
                     " - ResultSet is null or empty");
             }
         } catch (SQLException ex) {
-            Logger.getLogger(EmployeeDBContext.class.getName()).log(Level.SEVERE, "Error inserting employee: " + (e != null ? e.getName() : "null"), ex);
+            Logger.getLogger(EmployeeDBContext.class.getName()).log(Level.SEVERE, 
+                "Error inserting employee: " + (e != null ? e.getName() : "null"), ex);
+            ex.printStackTrace();
         } finally {
-            closeConnection();
+            // Đóng ResultSet và PreparedStatement trước
+            try {
+                if (rs != null) rs.close();
+            } catch (SQLException ex) {
+                Logger.getLogger(EmployeeDBContext.class.getName()).log(Level.WARNING, "Error closing ResultSet", ex);
+            }
+            try {
+                if (stm != null) stm.close();
+            } catch (SQLException ex) {
+                Logger.getLogger(EmployeeDBContext.class.getName()).log(Level.WARNING, "Error closing PreparedStatement", ex);
+            }
+            // KHÔNG close connection ở đây vì có thể còn dùng cho enrollment và role assignment
+            // closeConnection();
         }
         return -1;
     }
@@ -75,10 +107,36 @@ public class EmployeeDBContext extends DBContext<Employee> {
      */
     public ArrayList<Employee> getAllEmployees() {
         ArrayList<Employee> employees = new ArrayList<>();
+        PreparedStatement stm = null;
+        ResultSet rs = null;
         try {
+            // Đảm bảo connection được mở
+            if (connection == null || connection.isClosed()) {
+                Logger.getLogger(EmployeeDBContext.class.getName()).log(Level.SEVERE, 
+                    "Connection is null or closed in getAllEmployees, attempting to reconnect");
+                // Tạo connection mới
+                try {
+                    String user = "sa";
+                    String pass = "123";
+                    String url = "jdbc:sqlserver://localhost:1433;databaseName=FALL25_Assignment_SonNT;encrypt=true;trustServerCertificate=true;";
+                    Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
+                    connection = DriverManager.getConnection(url, user, pass);
+                } catch (Exception ex) {
+                    Logger.getLogger(EmployeeDBContext.class.getName()).log(Level.SEVERE, 
+                        "Failed to reconnect: " + ex.getMessage(), ex);
+                    return employees;
+                }
+            }
+            
+            if (connection == null || connection.isClosed()) {
+                Logger.getLogger(EmployeeDBContext.class.getName()).log(Level.SEVERE, 
+                    "Connection is still null or closed after reconnect attempt");
+                return employees;
+            }
+            
             String sql = "SELECT eid, ename FROM Employee ORDER BY ename ASC";
-            PreparedStatement stm = connection.prepareStatement(sql);
-            ResultSet rs = stm.executeQuery();
+            stm = connection.prepareStatement(sql);
+            rs = stm.executeQuery();
             
             while (rs.next()) {
                 Employee emp = new Employee();
@@ -87,9 +145,23 @@ public class EmployeeDBContext extends DBContext<Employee> {
                 employees.add(emp);
             }
         } catch (SQLException ex) {
-            Logger.getLogger(EmployeeDBContext.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(EmployeeDBContext.class.getName()).log(Level.SEVERE, 
+                "Error getting all employees: " + ex.getMessage(), ex);
+            ex.printStackTrace();
         } finally {
-            closeConnection();
+            // Đóng ResultSet và PreparedStatement trước
+            try {
+                if (rs != null) rs.close();
+            } catch (SQLException ex) {
+                Logger.getLogger(EmployeeDBContext.class.getName()).log(Level.WARNING, "Error closing ResultSet", ex);
+            }
+            try {
+                if (stm != null) stm.close();
+            } catch (SQLException ex) {
+                Logger.getLogger(EmployeeDBContext.class.getName()).log(Level.WARNING, "Error closing PreparedStatement", ex);
+            }
+            // KHÔNG close connection ở đây vì có thể còn dùng cho các method khác
+            // closeConnection();
         }
         return employees;
     }
@@ -113,6 +185,79 @@ public class EmployeeDBContext extends DBContext<Employee> {
             closeConnection();
         }
         return null;
+    }
+    
+    /**
+     * Lấy danh sách tất cả các Division
+     */
+    public ArrayList<Department> getAllDivisions() {
+        ArrayList<Department> divisions = new ArrayList<>();
+        PreparedStatement stm = null;
+        ResultSet rs = null;
+        try {
+            // Đảm bảo connection được mở
+            if (connection == null || connection.isClosed()) {
+                Logger.getLogger(EmployeeDBContext.class.getName()).log(Level.SEVERE, 
+                    "Connection is null or closed in getAllDivisions");
+                // Tạo connection mới
+                try {
+                    String user = "sa";
+                    String pass = "123";
+                    String url = "jdbc:sqlserver://localhost:1433;databaseName=FALL25_Assignment_SonNT;encrypt=true;trustServerCertificate=true;";
+                    Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
+                    connection = DriverManager.getConnection(url, user, pass);
+                } catch (Exception ex) {
+                    Logger.getLogger(EmployeeDBContext.class.getName()).log(Level.SEVERE, 
+                        "Failed to reconnect: " + ex.getMessage(), ex);
+                    return divisions;
+                }
+            }
+            
+            if (connection == null || connection.isClosed()) {
+                Logger.getLogger(EmployeeDBContext.class.getName()).log(Level.SEVERE, 
+                    "Connection is still null or closed after reconnect attempt");
+                return divisions;
+            }
+            
+            String sql = "SELECT did, dname FROM [Division] ORDER BY did ASC";
+            Logger.getLogger(EmployeeDBContext.class.getName()).log(Level.INFO, 
+                "Executing query: " + sql);
+            stm = connection.prepareStatement(sql);
+            rs = stm.executeQuery();
+            
+            int count = 0;
+            while (rs.next()) {
+                count++;
+                Department dept = new Department();
+                dept.setId(rs.getInt("did"));
+                dept.setName(rs.getString("dname"));
+                divisions.add(dept);
+                Logger.getLogger(EmployeeDBContext.class.getName()).log(Level.INFO, 
+                    "Found division: ID=" + dept.getId() + ", Name=" + dept.getName());
+            }
+            Logger.getLogger(EmployeeDBContext.class.getName()).log(Level.INFO, 
+                "Total divisions found: " + count);
+            
+            // Nếu không tìm thấy division nào, log warning
+            if (count == 0) {
+                Logger.getLogger(EmployeeDBContext.class.getName()).log(Level.WARNING, 
+                    "WARNING: No divisions found in database! Please check if Division table has data.");
+            }
+        } catch (SQLException ex) {
+            Logger.getLogger(EmployeeDBContext.class.getName()).log(Level.SEVERE, 
+                "Error in getAllDivisions: " + ex.getMessage(), ex);
+            ex.printStackTrace();
+        } finally {
+            try {
+                if (rs != null) rs.close();
+                if (stm != null) stm.close();
+            } catch (SQLException ex) {
+                Logger.getLogger(EmployeeDBContext.class.getName()).log(Level.WARNING, "Error closing resources", ex);
+            }
+            // KHÔNG close connection ở đây vì có thể còn dùng cho các method khác
+            // closeConnection();
+        }
+        return divisions;
     }
     
     /**
